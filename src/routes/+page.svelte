@@ -1,89 +1,121 @@
 <script lang="ts">
-    import { invoke } from "@tauri-apps/api/core";
-    import { getCurrentWindow } from "@tauri-apps/api/window";
-    import { onDestroy, onMount } from "svelte";
-    import Cat from "$lib/components/cat.svelte";
+  import { invoke } from "@tauri-apps/api/core";
+  import { getCurrentWindow } from "@tauri-apps/api/window";
+  import { onMount } from "svelte";
+  import Cat from "$lib/components/cat.svelte";
 
-    const appWindow = getCurrentWindow();
-    let isDragging = false;
-    let pupilOffsetX = 0;
-    let pupilOffsetY = 0;
+  const appWindow = getCurrentWindow();
 
-    function clamp(val: number, min: number, max: number) {
-        return Math.min(Math.max(val, min), max);
+  let isDragging = false;
+  let pupilOffsetX = 0;
+  let pupilOffsetY = 0;
+  let catState: "idle" | "hunt" = "idle";
+  let prevX = 0;
+  let prevY = 0;
+  let huntTimeout: any = null;
+
+  function startDragging(e: MouseEvent) {
+    if (e.button !== 0) {
+      return;
     }
 
-    let interval: ReturnType<typeof setInterval>;
+    // CRITICAL: prevent text selection
+    e.preventDefault();
+    e.stopPropagation();
 
-    onMount(() => {
-        interval = setInterval(async () => {
-            try {
-                const [cursorX, cursorY] = await invoke<[number, number]>(
-                    "get_cursor_position",
-                );
-                const winPos = await appWindow.outerPosition();
-                const winSize = await appWindow.outerSize();
+    isDragging = true;
 
-                const centerX = winPos.x + winSize.width / 2;
-                const centerY = winPos.y + winSize.height / 2;
+    // CRITICAL: no await — must be called synchronously
+    // so the OS can capture the mousedown event timing
+    appWindow.startDragging().catch(() => {});
+  }
 
-                const dx = cursorX - centerX;
-                const dy = cursorY - centerY;
+  function stopDragging() {
+    isDragging = false;
+  }
 
-                const dist = Math.sqrt(dx * dx + dy * dy);
-                const maxDist = 150;
-                const ratio = Math.min(dist / maxDist, 1);
-                const angle = Math.atan2(dy, dx);
+  onMount(() => {
+    const interval = setInterval(async () => {
+      try {
+        const [cursorX, cursorY] = await invoke<[number, number]>(
+          "get_cursor_position"
+        );
+        const winPos = await appWindow.outerPosition();
+        const winSize = await appWindow.outerSize();
 
-                pupilOffsetX = clamp(Math.cos(angle) * ratio * 0.5, -0.5, 0.5);
-                pupilOffsetY = clamp(Math.sin(angle) * ratio * 0.5, -0.5, 0.5);
-            } catch (_) {}
-        }, 50);
-    });
+        const centerX = winPos.x + winSize.width / 2;
+        const centerY = winPos.y + winSize.height / 2;
+        const dx = cursorX - centerX;
+        const dy = cursorY - centerY;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        const ratio = Math.min(dist / 150, 1);
+        const angle = Math.atan2(dy, dx);
 
-    onDestroy(() => clearInterval(interval));
+        pupilOffsetX = Math.cos(angle) * ratio * 0.5;
+        pupilOffsetY = Math.sin(angle) * ratio * 0.5;
 
-    async function startDragging() {
-        isDragging = true;
-        await appWindow.startDragging();
-    }
+        // Hunt detection
+        const speed = Math.sqrt(
+          (cursorX - prevX) ** 2 + (cursorY - prevY) ** 2
+        );
+        if (speed > 60) {
+          catState = "hunt";
+          if (huntTimeout) {
+            clearTimeout(huntTimeout);
+          }
+          huntTimeout = setTimeout(() => (catState = "idle"), 2000);
+        }
+
+        prevX = cursorX;
+        prevY = cursorY;
+      } catch (_) {}
+    }, 50);
+
+    return () => {
+      clearInterval(interval);
+      if (huntTimeout) {
+        clearTimeout(huntTimeout);
+      }
+    };
+  });
 </script>
 
-<svelte:window on:mouseup={() => (isDragging = false)} />
+<svelte:window on:mouseup={stopDragging} />
 
 <div class="stage" on:mousedown={startDragging} role="presentation">
-    <div class="cat-container" class:bounce={!isDragging}>
-        <Cat bodyColor="#636e72" {pupilOffsetX} {pupilOffsetY} />
-    </div>
+  <div class="cat-container" class:bounce={!isDragging && catState === "idle"}>
+    <Cat {isDragging} {pupilOffsetX} {pupilOffsetY} state={catState} />
+  </div>
 </div>
 
 <style>
-    .stage {
-        align-items: center;
-        cursor: grab;
-        display: flex;
-        height: 160px;
-        justify-content: center;
-        user-select: none;
-        width: 160px;
-    }
+  .stage {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 160px;
+    height: 160px;
+    cursor: grab;
+    background-color: rgba(0, 0, 0, 0.001);
+  }
 
-    .cat-container {
-        width: 120px;
-        height: 120px;
-    }
+  .cat-container {
+    width: 120px;
+    height: 120px;
+    pointer-events: none;
+  }
 
-    .bounce {
-        animation: idle-bounce 2s infinite ease-in-out;
-    }
+  .bounce {
+    animation: idle-bounce 2s infinite ease-in-out;
+  }
 
-    @keyframes idle-bounce {
-        0%,
-        100% {
-            transform: translateY(0) scale(1);
-        }
-        50% {
-            transform: translateY(2px) scale(1.02, 0.98);
-        }
+  @keyframes idle-bounce {
+    0%,
+    100% {
+      transform: translateY(0);
     }
+    50% {
+      transform: translateY(4px);
+    }
+  }
 </style>
