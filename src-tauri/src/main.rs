@@ -2,6 +2,9 @@
 
 use tauri::Manager;
 
+#[cfg(target_os = "macos")]
+mod keyboard;
+
 #[tauri::command]
 fn get_cursor_position(app: tauri::AppHandle) -> Result<(f64, f64), String> {
     let pos = app.cursor_position().map_err(|e| e.to_string())?;
@@ -29,6 +32,11 @@ fn main() {
                 x: (screen_size.width - 180) as i32,
                 y: (screen_size.height - 220) as i32,
             })?;
+
+            // Start global keyboard listener (macOS only)
+            #[cfg(target_os = "macos")]
+            keyboard::start(app.handle().clone());
+
             Ok(())
         })
         .run(tauri::generate_context!())

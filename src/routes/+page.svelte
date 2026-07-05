@@ -1,30 +1,41 @@
 <script lang="ts">
   import { invoke } from "@tauri-apps/api/core";
+  import { listen } from "@tauri-apps/api/event";
   import { getCurrentWindow } from "@tauri-apps/api/window";
   import { onMount } from "svelte";
   import Cat from "$lib/components/cat.svelte";
   import { isCursorOnHead } from "$lib/utils/pet-detector";
   import { ShakeDetector } from "$lib/utils/shake-detector";
+  import { TypingDetector } from "$lib/utils/typing-detector";
+
+  type Timer = ReturnType<typeof setTimeout> | null;
+  type Interval = ReturnType<typeof setInterval> | null;
 
   const appWindow = getCurrentWindow();
   const shakeDetector = new ShakeDetector();
+  const typingDetector = new TypingDetector();
 
   let isDragging = false;
   let isWobbling = false;
   let pupilOffsetX = 0;
   let pupilOffsetY = 0;
-  let catState: "idle" | "hunt" | "pet" = "idle";
+  let kneadFrame = 0;
+  let paperLength = 0;
+  let catState: "idle" | "hunt" | "pet" | "knead" | "overheat" | "scroll" =
+    "idle";
 
   let prevX = 0;
   let prevY = 0;
-  let huntTimeout: any = null;
-  let wobbleTimeout: any = null;
+
+  let huntTimeout: Timer = null;
+  let wobbleTimeout: Timer = null;
   let petHoverStart: number | null = null;
-  let petTimeout: any = null;
+  let petTimeout: Timer = null;
+  let kneadTimeout: Timer = null;
+  let kneadInterval: Interval = null;
+  let scrollTimeout: Timer = null;
 
-  const PET_HOVER_DELAY = 300; // ms hover before pet triggers
-  const PET_RESET_DELAY = 1200;
-
+  // --- Wobble ---
   function triggerWobble() {
     isWobbling = false;
     setTimeout(() => {
@@ -32,12 +43,28 @@
       if (wobbleTimeout) {
         clearTimeout(wobbleTimeout);
       }
-      wobbleTimeout = setTimeout(() => {
-        isWobbling = false;
-      }, 500);
+      wobbleTimeout = setTimeout(() => (isWobbling = false), 500);
     }, 10);
   }
 
+  // --- Knead ---
+  function startKneadAnimation() {
+    if (kneadInterval) {
+      return;
+    }
+    kneadInterval = setInterval(() => {
+      kneadFrame = kneadFrame === 0 ? 1 : 0;
+    }, 250);
+  }
+
+  function stopKneadAnimation() {
+    if (kneadInterval) {
+      clearInterval(kneadInterval);
+      kneadInterval = null;
+    }
+  }
+
+  // --- Drag ---
   function startDragging(e: MouseEvent) {
     if (e.button !== 0) {
       return;
@@ -49,7 +76,10 @@
     appWindow
       .setFocus()
       .then(() => appWindow.startDragging())
-      .catch(() => {});
+      .catch((err: unknown) => {
+        // Drag cancelled or window unfocused — not a fatal error
+        console.debug("[Comnyang] drag cancelled", err);
+      });
   }
 
   function stopDragging() {
@@ -57,85 +87,183 @@
     shakeDetector.reset();
   }
 
+  // --- Poll sub-functions (reduce complexity) ---
+
+  function updateEyes(
+    cursorX: number,
+    cursorY: number,
+    winX: number,
+    winY: number,
+    winW: number,
+    winH: number
+  ) {
+    const centerX = winX + winW / 2;
+    const centerY = winY + winH / 2;
+    const dx = cursorX - centerX;
+    const dy = cursorY - centerY;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    const ratio = Math.min(dist / 150, 1);
+    const angle = Math.atan2(dy, dx);
+    pupilOffsetX = Math.cos(angle) * ratio * 0.5;
+    pupilOffsetY = Math.sin(angle) * ratio * 0.5;
+  }
+
+  function updatePetState(
+    cursorX: number,
+    cursorY: number,
+    winX: number,
+    winY: number,
+    winW: number,
+    winH: number
+  ) {
+    const onHead = isCursorOnHead(cursorX, cursorY, winX, winY, winW, winH);
+
+    if (
+      onHead &&
+      catState !== "hunt" &&
+      catState !== "knead" &&
+      catState !== "overheat" &&
+      catState !== "scroll"
+    ) {
+      if (petHoverStart === null) {
+        petHoverStart = Date.now();
+      } else if (Date.now() - petHoverStart >= 300) {
+        catState = "pet";
+        if (petTimeout) {
+          clearTimeout(petTimeout);
+        }
+        petTimeout = setTimeout(() => {
+          catState = "idle";
+          petHoverStart = null;
+        }, 1200);
+      }
+    } else if (catState !== "pet") {
+      petHoverStart = null;
+    }
+  }
+
+  function updateHuntState(speed: number) {
+    if (catState !== "idle" && catState !== "hunt") {
+      return;
+    }
+    if (speed > 60) {
+      catState = "hunt";
+      if (huntTimeout) {
+        clearTimeout(huntTimeout);
+      }
+      huntTimeout = setTimeout(() => (catState = "idle"), 2000);
+    }
+  }
+
+  async function updateShake() {
+    const [winX] = await invoke<[number, number]>("get_window_position");
+    const shook = shakeDetector.update(winX);
+    if (shook) {
+      triggerWobble();
+    }
+  }
+
+  async function pollTick() {
+    const [cursorX, cursorY] = await invoke<[number, number]>(
+      "get_cursor_position"
+    );
+    const winPos = await appWindow.outerPosition();
+    const winSize = await appWindow.outerSize();
+
+    updateEyes(
+      cursorX,
+      cursorY,
+      winPos.x,
+      winPos.y,
+      winSize.width,
+      winSize.height
+    );
+
+    const speed = Math.sqrt((cursorX - prevX) ** 2 + (cursorY - prevY) ** 2);
+
+    if (!isDragging) {
+      updatePetState(
+        cursorX,
+        cursorY,
+        winPos.x,
+        winPos.y,
+        winSize.width,
+        winSize.height
+      );
+      updateHuntState(speed);
+    }
+
+    if (isDragging) {
+      await updateShake();
+    }
+
+    prevX = cursorX;
+    prevY = cursorY;
+  }
+
   onMount(() => {
-    const interval = setInterval(async () => {
-      try {
-        const [cursorX, cursorY] = await invoke<[number, number]>(
-          "get_cursor_position"
-        );
-        const winPos = await appWindow.outerPosition();
-        const winSize = await appWindow.outerSize();
+    // --- Keyboard ---
+    const unlistenKey = listen("key-typed", () => {
+      if (isDragging || catState === "scroll") {
+        return;
+      }
 
-        // Eye follow
-        const centerX = winPos.x + winSize.width / 2;
-        const centerY = winPos.y + winSize.height / 2;
-        const dx = cursorX - centerX;
-        const dy = cursorY - centerY;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-        const ratio = Math.min(dist / 150, 1);
-        const angle = Math.atan2(dy, dx);
-        pupilOffsetX = Math.cos(angle) * ratio * 0.5;
-        pupilOffsetY = Math.sin(angle) * ratio * 0.5;
+      const result = typingDetector.onKeyPress();
+      catState = result;
 
-        // Speed
-        const speed = Math.sqrt(
-          (cursorX - prevX) ** 2 + (cursorY - prevY) ** 2
-        );
+      if (result === "knead") {
+        startKneadAnimation();
+      } else {
+        stopKneadAnimation();
+      }
 
-        if (!isDragging) {
-          // Pet detection
-          const onHead = isCursorOnHead(
-            cursorX,
-            cursorY,
-            winPos.x,
-            winPos.y,
-            winSize.width,
-            winSize.height
-          );
+      if (kneadTimeout) {
+        clearTimeout(kneadTimeout);
+      }
+      kneadTimeout = setTimeout(() => {
+        catState = "idle";
+        stopKneadAnimation();
+        typingDetector.reset();
+      }, 1500);
+    });
 
-          if (onHead && catState !== "hunt") {
-            if (petHoverStart === null) {
-              petHoverStart = Date.now();
-            } else if (Date.now() - petHoverStart >= PET_HOVER_DELAY) {
-              catState = "pet";
-              if (petTimeout) {
-                clearTimeout(petTimeout);
-              }
-              petTimeout = setTimeout(() => {
-                catState = "idle";
-                petHoverStart = null;
-              }, PET_RESET_DELAY);
-            }
-          } else {
-            petHoverStart = null;
+    // --- Scroll ---
+    const unlistenScroll = listen<number>("scroll-event", (event) => {
+      if (isDragging) {
+        return;
+      }
+
+      catState = "scroll";
+      stopKneadAnimation();
+
+      paperLength = Math.min(paperLength + Math.abs(event.payload) * 0.5, 20);
+
+      if (scrollTimeout) {
+        clearTimeout(scrollTimeout);
+      }
+      scrollTimeout = setTimeout(() => {
+        catState = "idle";
+        const retract = setInterval(() => {
+          paperLength = Math.max(paperLength - 2, 0);
+          if (paperLength <= 0) {
+            clearInterval(retract);
           }
+        }, 50);
+      }, 1000);
+    });
 
-          // Hunt detection — only if not petting
-          if (catState !== "pet" && speed > 60) {
-            catState = "hunt";
-            if (huntTimeout) {
-              clearTimeout(huntTimeout);
-            }
-            huntTimeout = setTimeout(() => (catState = "idle"), 2000);
-          }
-        }
-
-        // Shake detection — only while dragging
-        if (isDragging) {
-          const [winX] = await invoke<[number, number]>("get_window_position");
-          const shook = shakeDetector.update(winX);
-          if (shook) {
-            triggerWobble();
-          }
-        }
-
-        prevX = cursorX;
-        prevY = cursorY;
-      } catch {}
+    // --- Poll interval (reduced complexity by extracting sub-functions) ---
+    const interval = setInterval(() => {
+      pollTick().catch((_err: unknown) => {
+        // Silently ignore poll errors (window not ready, etc.)
+      });
     }, 50);
 
     return () => {
       clearInterval(interval);
+      stopKneadAnimation();
+      unlistenKey.then((f) => f());
+      unlistenScroll.then((f) => f());
       if (huntTimeout) {
         clearTimeout(huntTimeout);
       }
@@ -144,6 +272,12 @@
       }
       if (petTimeout) {
         clearTimeout(petTimeout);
+      }
+      if (kneadTimeout) {
+        clearTimeout(kneadTimeout);
+      }
+      if (scrollTimeout) {
+        clearTimeout(scrollTimeout);
       }
     };
   });
@@ -156,10 +290,13 @@
     class="cat-container"
     class:bounce={!isDragging && catState === "idle"}
     class:hunt-wiggle={catState === "hunt" && !isDragging}
+    class:knead-bob={catState === "knead" || catState === "overheat"}
   >
     <Cat
       {isDragging}
       {isWobbling}
+      {kneadFrame}
+      {paperLength}
       {pupilOffsetX}
       {pupilOffsetY}
       state={catState}
@@ -187,9 +324,11 @@
   .bounce {
     animation: idle-float 3s infinite ease-in-out;
   }
-
   .hunt-wiggle {
     animation: hunt-wiggle 0.25s infinite alternate ease-in-out;
+  }
+  .knead-bob {
+    animation: knead-bob 0.5s infinite alternate ease-in-out;
   }
 
   @keyframes idle-float {
@@ -211,6 +350,15 @@
     }
     100% {
       transform: translateX(3px) rotate(2deg);
+    }
+  }
+
+  @keyframes knead-bob {
+    0% {
+      transform: translateY(0px) rotate(-1deg);
+    }
+    100% {
+      transform: translateY(2px) rotate(1deg);
     }
   }
 </style>
