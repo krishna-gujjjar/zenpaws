@@ -8,9 +8,19 @@ fn get_cursor_position(app: tauri::AppHandle) -> Result<(f64, f64), String> {
     Ok((pos.x, pos.y))
 }
 
+#[tauri::command]
+fn get_window_position(app: tauri::AppHandle) -> Result<(i32, i32), String> {
+    let window = app.get_webview_window("main").ok_or("no window")?;
+    let pos = window.outer_position().map_err(|e| e.to_string())?;
+    Ok((pos.x, pos.y))
+}
+
 fn main() {
     tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![get_cursor_position])
+        .invoke_handler(tauri::generate_handler![
+            get_cursor_position,
+            get_window_position
+        ])
         .setup(|app| {
             let window = app.get_webview_window("main").unwrap();
             let monitor = window.current_monitor()?.unwrap();
