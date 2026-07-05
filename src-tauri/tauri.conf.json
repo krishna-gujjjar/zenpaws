@@ -10,11 +10,21 @@
     "frontendDist": "../build"
   },
   "app": {
+    "macOSPrivateApi": true,
     "windows": [
       {
-        "title": "comyang",
-        "width": 800,
-        "height": 600
+        "label": "main",
+        "title": "Comnyang",
+        "width": 160,
+        "height": 160,
+        "resizable": true,
+        "fullscreen": false,
+        "decorations": false,
+        "transparent": true,
+        "alwaysOnTop": true,
+        "skipTaskbar": true,
+        "shadow": false,
+        "backgroundColor": "#000000"
       }
     ],
     "security": {
