@@ -487,22 +487,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "comyang"
-version = "0.1.0"
-dependencies = [
- "objc",
- "serde",
- "serde_json",
- "tauri",
- "tauri-build",
- "tauri-plugin-autostart",
- "tauri-plugin-global-shortcut",
- "tauri-plugin-notification",
- "tauri-plugin-opener",
- "tokio",
-]
-
-[[package]]
 name = "concurrent-queue"
 version = "2.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5058,6 +5042,22 @@ dependencies = [
  "serde",
  "winnow 1.0.3",
  "zvariant",
+]
+
+[[package]]
+name = "zenpaws"
+version = "0.1.0"
+dependencies = [
+ "objc",
+ "serde",
+ "serde_json",
+ "tauri",
+ "tauri-build",
+ "tauri-plugin-autostart",
+ "tauri-plugin-global-shortcut",
+ "tauri-plugin-notification",
+ "tauri-plugin-opener",
+ "tokio",
 ]
 
 [[package]]

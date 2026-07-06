@@ -14,8 +14,13 @@
     export let kneadFrame = 0;
     export let paperLength = 0;
     export let petType: "cat" | "panda" | "parrot" = "cat";
-    export let pattern: "black" | "siamese" | "orange" | "white" | "gray" =
-        "black";
+    export let pattern:
+        | "black"
+        | "siamese"
+        | "orange"
+        | "mackerel"
+        | "white"
+        | "gray" = "black";
 
     const LEFT_EYE = { x: 23, y: 24 };
     const RIGHT_EYE = { x: 41, y: 24 };
@@ -50,6 +55,7 @@
                     belly: "#e8e2d8",
                     whisker: "#1a1a1a",
                     earInner: "#d8a096",
+                    stripe: "#3d2f27",
                 };
             case "orange":
                 return {
@@ -58,6 +64,16 @@
                     belly: "#f7ba81",
                     whisker: "#ffffff",
                     earInner: "#f4a28c",
+                    stripe: "#b85714",
+                };
+            case "mackerel":
+                return {
+                    body: "#7a6855",
+                    point: "#383028",
+                    belly: "#ffffff",
+                    whisker: "#ffffff",
+                    earInner: "#e8afb8",
+                    stripe: "#383028",
                 };
             case "white":
                 return {
@@ -66,6 +82,7 @@
                     belly: "#f0f0f0",
                     whisker: "#333333",
                     earInner: "#f4b8ba",
+                    stripe: "#e8e8e8",
                 };
             case "gray":
                 return {
@@ -74,6 +91,7 @@
                     belly: "#8c9bae",
                     whisker: "#ffffff",
                     earInner: "#d1a7a7",
+                    stripe: "#525e6b",
                 };
             case "black":
             default:
@@ -83,6 +101,7 @@
                     belly: "#242424",
                     whisker: "#ffffff",
                     earInner: "#443333",
+                    stripe: "#111111",
                 };
         }
     })();
@@ -154,7 +173,7 @@
         <title>Comnyang Companion</title>
 
         {#if petType === "cat"}
-            <!-- ==================== 🐱 PROPER RETRO PIXEL CAT ==================== -->
+            <!-- ==================== 🐱 PROPER RETRO PIXEL CAT FIGURES ==================== -->
             <!-- Curled Stepped Tail -->
             <g
                 class="tail-group"
@@ -198,18 +217,149 @@
                 />
             </g>
 
-            <!-- Chubby Torso (Stacked rows for stepped pixel curves) -->
-            <rect x="20" y="34" width="24" height="2" fill={activeBodyColor} />
-            <rect x="18" y="36" width="28" height="14" fill={activeBodyColor} />
-            <rect x="20" y="50" width="24" height="2" fill={activeBodyColor} />
-            <!-- Belly contrast patch -->
-            <rect
-                x="22"
-                y="38"
-                width="20"
-                height="12"
-                fill={activeBellyColor}
-            />
+            <!-- DISTINCT STATE FIGURES FOR CAT -->
+            {#if state === "knead"}
+                <!-- KNEAD FIGURE (Leaning forward typing pose matching 8.41.42 AM / kneab.png) -->
+                <rect
+                    x="18"
+                    y="34"
+                    width="28"
+                    height="14"
+                    fill={activeBodyColor}
+                />
+                <rect
+                    x="20"
+                    y="48"
+                    width="24"
+                    height="4"
+                    fill={activeBodyColor}
+                />
+                <rect
+                    x="22"
+                    y="38"
+                    width="20"
+                    height="10"
+                    fill={activeBellyColor}
+                />
+
+                <!-- Tabby Stripes on Back/Flanks -->
+                {#if (pattern === "orange" || pattern === "mackerel") && state !== "overheat"}
+                    <rect
+                        x="18"
+                        y="38"
+                        width="4"
+                        height="2"
+                        fill={catColors.stripe}
+                    />
+                    <rect
+                        x="42"
+                        y="38"
+                        width="4"
+                        height="2"
+                        fill={catColors.stripe}
+                    />
+                    <rect
+                        x="18"
+                        y="44"
+                        width="4"
+                        height="2"
+                        fill={catColors.stripe}
+                    />
+                    <rect
+                        x="42"
+                        y="44"
+                        width="4"
+                        height="2"
+                        fill={catColors.stripe}
+                    />
+                {/if}
+            {:else if state === "hunt"}
+                <!-- HUNT FIGURE (Stalking crouch pose matching hunt.png) -->
+                <rect
+                    x="16"
+                    y="38"
+                    width="32"
+                    height="12"
+                    fill={activeBodyColor}
+                />
+                <rect
+                    x="18"
+                    y="50"
+                    width="28"
+                    height="4"
+                    fill={activeBodyColor}
+                />
+                <rect
+                    x="22"
+                    y="40"
+                    width="20"
+                    height="10"
+                    fill={activeBellyColor}
+                />
+            {:else}
+                <!-- NORMAL / IDLE / PET / OVERHEAT / SCROLL FIGURE -->
+                <rect
+                    x="20"
+                    y="34"
+                    width="24"
+                    height="2"
+                    fill={activeBodyColor}
+                />
+                <rect
+                    x="18"
+                    y="36"
+                    width="28"
+                    height="14"
+                    fill={activeBodyColor}
+                />
+                <rect
+                    x="20"
+                    y="50"
+                    width="24"
+                    height="2"
+                    fill={activeBodyColor}
+                />
+                <!-- Belly / White Bib contrast patch -->
+                <rect
+                    x="22"
+                    y="38"
+                    width="20"
+                    height="12"
+                    fill={activeBellyColor}
+                />
+
+                <!-- Tabby Stripes on Back/Flanks -->
+                {#if (pattern === "orange" || pattern === "mackerel") && state !== "overheat"}
+                    <rect
+                        x="18"
+                        y="40"
+                        width="4"
+                        height="2"
+                        fill={catColors.stripe}
+                    />
+                    <rect
+                        x="42"
+                        y="40"
+                        width="4"
+                        height="2"
+                        fill={catColors.stripe}
+                    />
+                    <rect
+                        x="18"
+                        y="46"
+                        width="4"
+                        height="2"
+                        fill={catColors.stripe}
+                    />
+                    <rect
+                        x="42"
+                        y="46"
+                        width="4"
+                        height="2"
+                        fill={catColors.stripe}
+                    />
+                {/if}
+            {/if}
 
             <!-- Pointy Ears (3-step pixel stairs) -->
             <g
@@ -278,100 +428,193 @@
             </g>
 
             <!-- Round Stepped Head -->
-            <rect x="18" y="14" width="28" height="1" fill={activeBodyColor} />
-            <rect x="16" y="15" width="32" height="1" fill={activeBodyColor} />
-            <rect x="14" y="16" width="36" height="18" fill={activeBodyColor} />
-            <rect x="16" y="34" width="32" height="1" fill={activeBodyColor} />
-            <rect x="18" y="35" width="28" height="1" fill={activeBodyColor} />
-
-            <!-- Siamese Face Point Mask -->
-            {#if pattern === "siamese" && state !== "overheat"}
+            <g class:head-lift={state === "pet"}>
                 <rect
-                    x="20"
-                    y="19"
-                    width="24"
-                    height="15"
-                    fill={catColors.point}
+                    x="18"
+                    y="14"
+                    width="28"
+                    height="1"
+                    fill={activeBodyColor}
+                />
+                <rect
+                    x="16"
+                    y="15"
+                    width="32"
+                    height="1"
+                    fill={activeBodyColor}
+                />
+                <rect
+                    x="14"
+                    y="16"
+                    width="36"
+                    height="18"
+                    fill={activeBodyColor}
+                />
+                <rect
+                    x="16"
+                    y="34"
+                    width="32"
+                    height="1"
+                    fill={activeBodyColor}
                 />
                 <rect
                     x="18"
-                    y="21"
+                    y="35"
                     width="28"
-                    height="11"
-                    fill={catColors.point}
+                    height="1"
+                    fill={activeBodyColor}
                 />
-            {/if}
 
-            <!-- Crisp Horizontal Whiskers -->
-            <rect x="5" y="24" width="8" height="1" fill={catColors.whisker} />
-            <rect x="5" y="28" width="8" height="1" fill={catColors.whisker} />
-            <rect x="51" y="24" width="8" height="1" fill={catColors.whisker} />
-            <rect x="51" y="28" width="8" height="1" fill={catColors.whisker} />
+                <!-- Tabby Forehead & Cheek Stripes -->
+                {#if (pattern === "orange" || pattern === "mackerel") && state !== "overheat"}
+                    <rect
+                        x="28"
+                        y="15"
+                        width="2"
+                        height="3"
+                        fill={catColors.stripe}
+                    />
+                    <rect
+                        x="34"
+                        y="15"
+                        width="2"
+                        height="3"
+                        fill={catColors.stripe}
+                    />
+                    <rect
+                        x="14"
+                        y="24"
+                        width="3"
+                        height="2"
+                        fill={catColors.stripe}
+                    />
+                    <rect
+                        x="47"
+                        y="24"
+                        width="3"
+                        height="2"
+                        fill={catColors.stripe}
+                    />
+                {/if}
 
-            <!-- Cute Nose and w-Mouth -->
-            <rect x="31" y="28" width="2" height="1" fill="#ff8da1" />
-            <rect
-                x="30"
-                y="30"
-                width="1"
-                height="1"
-                fill="#ffffff"
-                opacity="0.9"
-            />
-            <rect
-                x="31"
-                y="31"
-                width="1"
-                height="1"
-                fill="#ffffff"
-                opacity="0.9"
-            />
-            <rect
-                x="32"
-                y="30"
-                width="1"
-                height="1"
-                fill="#ffffff"
-                opacity="0.9"
-            />
-            <rect
-                x="33"
-                y="31"
-                width="1"
-                height="1"
-                fill="#ffffff"
-                opacity="0.9"
-            />
-            <rect
-                x="34"
-                y="30"
-                width="1"
-                height="1"
-                fill="#ffffff"
-                opacity="0.9"
-            />
+                <!-- Siamese Face Point Mask -->
+                {#if pattern === "siamese" && state !== "overheat"}
+                    <rect
+                        x="20"
+                        y="19"
+                        width="24"
+                        height="15"
+                        fill={catColors.point}
+                    />
+                    <rect
+                        x="18"
+                        y="21"
+                        width="28"
+                        height="11"
+                        fill={catColors.point}
+                    />
+                {/if}
 
-            <!-- Cheek Blush -->
-            {#if state === "pet"}
+                <!-- White Muzzle for Mackerel Tabby matching 8.40.02 AM -->
+                {#if pattern === "mackerel" && state !== "overheat"}
+                    <rect x="26" y="28" width="12" height="6" fill="#ffffff" />
+                {/if}
+
+                <!-- Crisp Horizontal Whiskers -->
                 <rect
-                    x="16"
-                    y="27"
-                    width="4"
-                    height="2"
-                    fill="#ff8da1"
+                    x="5"
+                    y="24"
+                    width="8"
+                    height="1"
+                    fill={catColors.whisker}
+                />
+                <rect
+                    x="5"
+                    y="28"
+                    width="8"
+                    height="1"
+                    fill={catColors.whisker}
+                />
+                <rect
+                    x="51"
+                    y="24"
+                    width="8"
+                    height="1"
+                    fill={catColors.whisker}
+                />
+                <rect
+                    x="51"
+                    y="28"
+                    width="8"
+                    height="1"
+                    fill={catColors.whisker}
+                />
+
+                <!-- Cute Nose and w-Mouth -->
+                <rect x="31" y="28" width="2" height="1" fill="#ff8da1" />
+                <rect
+                    x="30"
+                    y="30"
+                    width="1"
+                    height="1"
+                    fill="#ffffff"
                     opacity="0.9"
                 />
                 <rect
-                    x="44"
-                    y="27"
-                    width="4"
-                    height="2"
-                    fill="#ff8da1"
+                    x="31"
+                    y="31"
+                    width="1"
+                    height="1"
+                    fill="#ffffff"
                     opacity="0.9"
                 />
-            {/if}
+                <rect
+                    x="32"
+                    y="30"
+                    width="1"
+                    height="1"
+                    fill="#ffffff"
+                    opacity="0.9"
+                />
+                <rect
+                    x="33"
+                    y="31"
+                    width="1"
+                    height="1"
+                    fill="#ffffff"
+                    opacity="0.9"
+                />
+                <rect
+                    x="34"
+                    y="30"
+                    width="1"
+                    height="1"
+                    fill="#ffffff"
+                    opacity="0.9"
+                />
+
+                <!-- Cheek Blush -->
+                {#if state === "pet"}
+                    <rect
+                        x="16"
+                        y="27"
+                        width="4"
+                        height="2"
+                        fill="#ff8da1"
+                        opacity="0.9"
+                    />
+                    <rect
+                        x="44"
+                        y="27"
+                        width="4"
+                        height="2"
+                        fill="#ff8da1"
+                        opacity="0.9"
+                    />
+                {/if}
+            </g>
         {:else if petType === "panda"}
-            <!-- ==================== 🐼 PROPER RETRO PIXEL PANDA ==================== -->
+            <!-- ==================== 🐼 PROPER RETRO PIXEL PANDA FIGURES ==================== -->
             <!-- Round Charcoal Ears -->
             <rect x="13" y="10" width="8" height="6" fill={activePointColor} />
             <rect x="15" y="8" width="4" height="2" fill={activePointColor} />
@@ -384,57 +627,101 @@
             <rect x="24" y="36" width="16" height="16" fill={activeBodyColor} />
 
             <!-- Round Stepped White Head -->
-            <rect x="18" y="14" width="28" height="1" fill={activeBodyColor} />
-            <rect x="16" y="15" width="32" height="1" fill={activeBodyColor} />
-            <rect x="14" y="16" width="36" height="18" fill={activeBodyColor} />
-            <rect x="16" y="34" width="32" height="1" fill={activeBodyColor} />
-            <rect x="18" y="35" width="28" height="1" fill={activeBodyColor} />
-
-            <!-- Distinctive Angled Dark Eye Patches -->
-            <rect
-                x="17"
-                y="19"
-                width="10"
-                height="10"
-                fill={activePointColor}
-            />
-            <rect x="16" y="21" width="12" height="6" fill={activePointColor} />
-            <rect
-                x="37"
-                y="19"
-                width="10"
-                height="10"
-                fill={activePointColor}
-            />
-            <rect x="36" y="21" width="12" height="6" fill={activePointColor} />
-
-            <!-- Cute Nose & Smiling Mouth -->
-            <rect x="30" y="28" width="4" height="2" fill="#111111" />
-            <rect x="31" y="31" width="2" height="1" fill="#111111" />
-            <rect x="29" y="32" width="2" height="1" fill="#111111" />
-            <rect x="33" y="32" width="2" height="1" fill="#111111" />
-
-            <!-- Cheek Blush -->
-            {#if state === "pet"}
+            <g class:head-lift={state === "pet"}>
                 <rect
-                    x="15"
-                    y="27"
-                    width="4"
-                    height="2"
-                    fill="#ff8da1"
-                    opacity="0.9"
+                    x="18"
+                    y="14"
+                    width="28"
+                    height="1"
+                    fill={activeBodyColor}
                 />
                 <rect
-                    x="45"
-                    y="27"
-                    width="4"
-                    height="2"
-                    fill="#ff8da1"
-                    opacity="0.9"
+                    x="16"
+                    y="15"
+                    width="32"
+                    height="1"
+                    fill={activeBodyColor}
                 />
-            {/if}
+                <rect
+                    x="14"
+                    y="16"
+                    width="36"
+                    height="18"
+                    fill={activeBodyColor}
+                />
+                <rect
+                    x="16"
+                    y="34"
+                    width="32"
+                    height="1"
+                    fill={activeBodyColor}
+                />
+                <rect
+                    x="18"
+                    y="35"
+                    width="28"
+                    height="1"
+                    fill={activeBodyColor}
+                />
+
+                <!-- Distinctive Angled Dark Eye Patches -->
+                <rect
+                    x="17"
+                    y="19"
+                    width="10"
+                    height="10"
+                    fill={activePointColor}
+                />
+                <rect
+                    x="16"
+                    y="21"
+                    width="12"
+                    height="6"
+                    fill={activePointColor}
+                />
+                <rect
+                    x="37"
+                    y="19"
+                    width="10"
+                    height="10"
+                    fill={activePointColor}
+                />
+                <rect
+                    x="36"
+                    y="21"
+                    width="12"
+                    height="6"
+                    fill={activePointColor}
+                />
+
+                <!-- Cute Nose & Smiling Mouth -->
+                <rect x="30" y="28" width="4" height="2" fill="#111111" />
+                <rect x="31" y="31" width="2" height="1" fill="#111111" />
+                <rect x="29" y="32" width="2" height="1" fill="#111111" />
+                <rect x="33" y="32" width="2" height="1" fill="#111111" />
+
+                <!-- Cheek Blush -->
+                {#if state === "pet"}
+                    <rect
+                        x="15"
+                        y="27"
+                        width="4"
+                        height="2"
+                        fill="#ff8da1"
+                        opacity="0.9"
+                    />
+                    <rect
+                        x="45"
+                        y="27"
+                        width="4"
+                        height="2"
+                        fill="#ff8da1"
+                        opacity="0.9"
+                    />
+                {/if}
+            </g>
         {:else}
-            <!-- ==================== 🦜 PROPER RETRO PIXEL PARROT ==================== -->
+            <!-- ==================== 🦜 PROPER RETRO PIXEL PARROT FIGURES ==================== -->
             <!-- Green Tail Feathers -->
             <rect x="12" y="44" width="8" height="6" fill="#3f8a2b" />
             <rect x="8" y="48" width="10" height="6" fill="#2d681e" />
@@ -462,93 +749,122 @@
             </g>
 
             <!-- Round Stepped Green Head -->
-            <rect x="18" y="14" width="28" height="1" fill={activeBodyColor} />
-            <rect x="16" y="15" width="32" height="1" fill={activeBodyColor} />
-            <rect x="14" y="16" width="36" height="18" fill={activeBodyColor} />
-            <rect x="16" y="34" width="32" height="1" fill={activeBodyColor} />
+            <g class:head-lift={state === "pet"}>
+                <rect
+                    x="18"
+                    y="14"
+                    width="28"
+                    height="1"
+                    fill={activeBodyColor}
+                />
+                <rect
+                    x="16"
+                    y="15"
+                    width="32"
+                    height="1"
+                    fill={activeBodyColor}
+                />
+                <rect
+                    x="14"
+                    y="16"
+                    width="36"
+                    height="18"
+                    fill={activeBodyColor}
+                />
+                <rect
+                    x="16"
+                    y="34"
+                    width="32"
+                    height="1"
+                    fill={activeBodyColor}
+                />
 
-            <!-- Orange/Peach Cheek Patches -->
-            <rect x="16" y="25" width="6" height="6" fill="#f2a477" />
-            <rect x="42" y="25" width="6" height="6" fill="#f2a477" />
+                <!-- Orange/Peach Cheek Patches -->
+                <rect x="16" y="25" width="6" height="6" fill="#f2a477" />
+                <rect x="42" y="25" width="6" height="6" fill="#f2a477" />
 
-            <!-- Big Orange/Brown Curved Beak -->
-            <rect x="28" y="23" width="8" height="10" fill="#c45d3c" />
-            <rect x="30" y="21" width="4" height="14" fill="#e08658" />
-            <rect x="30" y="35" width="4" height="2" fill="#9e472b" />
+                <!-- Big Orange/Brown Curved Beak -->
+                <rect x="28" y="23" width="8" height="10" fill="#c45d3c" />
+                <rect x="30" y="21" width="4" height="14" fill="#e08658" />
+                <rect x="30" y="35" width="4" height="2" fill="#9e472b" />
+            </g>
         {/if}
 
         <!-- ==================== SHARED EYES & EXPRESSIONS LAYER ==================== -->
-        {#if state === "pet" || state === "stretch"}
-            <!-- Happy squinty closed eyes ( ^_^ ) -->
-            <rect x="20" y="24" width="1" height="1" fill="#ffffff" />
-            <rect x="21" y="23" width="4" height="1" fill="#ffffff" />
-            <rect x="25" y="24" width="1" height="1" fill="#ffffff" />
+        <g class:head-lift={state === "pet"}>
+            {#if state === "pet" || state === "stretch"}
+                <!-- Happy squinty closed eyes ( ^_^ ) matching 8.41.17 AM -->
+                <rect x="20" y="24" width="1" height="1" fill="#ffffff" />
+                <rect x="21" y="23" width="4" height="1" fill="#ffffff" />
+                <rect x="25" y="24" width="1" height="1" fill="#ffffff" />
 
-            <rect x="38" y="24" width="1" height="1" fill="#ffffff" />
-            <rect x="39" y="23" width="4" height="1" fill="#ffffff" />
-            <rect x="43" y="24" width="1" height="1" fill="#ffffff" />
-        {:else if state === "overheat"}
-            <!-- Overheat swirly/dizzy eyes -->
-            <rect x="20" y="21" width="6" height="6" fill="#ffffff" />
-            <rect x="38" y="21" width="6" height="6" fill="#ffffff" />
-            <rect x="22" y="23" width="2" height="2" fill="#ff0000" />
-            <rect x="40" y="23" width="2" height="2" fill="#ff0000" />
-        {:else}
-            <!-- Normal pixel white eye backgrounds -->
-            <rect x="20" y="21" width="6" height="6" fill="#ffffff" />
-            <rect x="38" y="21" width="6" height="6" fill="#ffffff" />
+                <rect x="38" y="24" width="1" height="1" fill="#ffffff" />
+                <rect x="39" y="23" width="4" height="1" fill="#ffffff" />
+                <rect x="43" y="24" width="1" height="1" fill="#ffffff" />
+            {:else if state === "overheat"}
+                <!-- Overheat swirly/dizzy eyes -->
+                <rect x="20" y="21" width="6" height="6" fill="#ffffff" />
+                <rect x="38" y="21" width="6" height="6" fill="#ffffff" />
+                <rect x="22" y="23" width="2" height="2" fill="#ff0000" />
+                <rect x="40" y="23" width="2" height="2" fill="#ff0000" />
+            {:else}
+                <!-- Normal pixel white eye backgrounds -->
+                <rect x="20" y="21" width="6" height="6" fill="#ffffff" />
+                <rect x="38" y="21" width="6" height="6" fill="#ffffff" />
 
-            <!-- Moving Pupils that track cursor (3x3 pixel squares) -->
-            <rect
-                x={Math.round(20 + 1.5 + pupilOffsetX * MAX_OFFSET)}
-                y={Math.round(21 + 1.5 + pupilOffsetY * MAX_OFFSET)}
-                width={state === "hunt" ? "4" : "3"}
-                height={state === "hunt" ? "4" : "3"}
-                fill="#000000"
-            />
-            <rect
-                x={Math.round(38 + 1.5 + pupilOffsetX * MAX_OFFSET)}
-                y={Math.round(21 + 1.5 + pupilOffsetY * MAX_OFFSET)}
-                width={state === "hunt" ? "4" : "3"}
-                height={state === "hunt" ? "4" : "3"}
-                fill="#000000"
-            />
-
-            <!-- Angry hunt eyebrows -->
-            {#if state === "hunt"}
+                <!-- Moving Pupils that track cursor (3x3 pixel squares) -->
                 <rect
-                    x="19"
-                    y="19"
-                    width="8"
-                    height="2"
-                    fill={activePointColor}
-                    transform="rotate(15, 23, 20)"
+                    x={Math.round(20 + 1.5 + pupilOffsetX * MAX_OFFSET)}
+                    y={Math.round(21 + 1.5 + pupilOffsetY * MAX_OFFSET)}
+                    width={state === "hunt" ? "4" : "3"}
+                    height={state === "hunt" ? "4" : "3"}
+                    fill="#000000"
                 />
                 <rect
-                    x="37"
-                    y="19"
-                    width="8"
-                    height="2"
-                    fill={activePointColor}
-                    transform="rotate(-15, 41, 20)"
+                    x={Math.round(38 + 1.5 + pupilOffsetX * MAX_OFFSET)}
+                    y={Math.round(21 + 1.5 + pupilOffsetY * MAX_OFFSET)}
+                    width={state === "hunt" ? "4" : "3"}
+                    height={state === "hunt" ? "4" : "3"}
+                    fill="#000000"
                 />
+
+                <!-- Angry hunt eyebrows -->
+                {#if state === "hunt"}
+                    <rect
+                        x="19"
+                        y="19"
+                        width="8"
+                        height="2"
+                        fill={activePointColor}
+                        transform="rotate(15, 23, 20)"
+                    />
+                    <rect
+                        x="37"
+                        y="19"
+                        width="8"
+                        height="2"
+                        fill={activePointColor}
+                        transform="rotate(-15, 41, 20)"
+                    />
+                {/if}
             {/if}
-        {/if}
+        </g>
 
         <!-- ==================== SHARED PAWS / FEET LAYER ==================== -->
         {#if state === "knead"}
-            <!-- Kneading Keyboard Keys -->
-            <rect x="17" y="56" width="12" height="5" fill="#888888" />
-            <rect x="18" y="56" width="10" height="3" fill="#cccccc" />
-            <rect x="35" y="56" width="12" height="5" fill="#888888" />
-            <rect x="36" y="56" width="10" height="3" fill="#cccccc" />
+            <!-- Kneading 3D Keyboard Keys matching 8.41.42 AM / kneab.png -->
+            <rect x="16" y="56" width="14" height="6" fill="#777777" />
+            <rect x="17" y="56" width="12" height="4" fill="#dddddd" />
+            <rect x="34" y="56" width="14" height="6" fill="#777777" />
+            <rect x="35" y="56" width="12" height="4" fill="#dddddd" />
 
-            <!-- Alternating Paw taps -->
+            <!-- Alternating Paw taps reaching over keyboard keys -->
             <rect
                 x="19"
                 y={kneadFrame === 0 ? 50 : 53}
                 width="8"
-                height="6"
+                height="7"
+                rx="2"
                 fill={pawColor}
             />
             {#if petType === "panda"}
@@ -564,7 +880,8 @@
                 x="37"
                 y={kneadFrame === 1 ? 50 : 53}
                 width="8"
-                height="6"
+                height="7"
+                rx="2"
                 fill={pawColor}
             />
             {#if petType === "panda"}
@@ -600,8 +917,8 @@
                     fill="#cccccc"
                 />{/if}
             <!-- Paws rolling paper -->
-            <rect x="19" y="48" width="8" height="6" fill={pawColor} />
-            <rect x="37" y="48" width="8" height="6" fill={pawColor} />
+            <rect x="19" y="48" width="8" height="6" rx="2" fill={pawColor} />
+            <rect x="37" y="48" width="8" height="6" rx="2" fill={pawColor} />
         {:else}
             <!-- Idle Paws / Feet -->
             {#if petType === "panda"}
@@ -720,6 +1037,12 @@
         transform: scaleY(0.93) translateY(2px);
     }
 
+    /* Head Lift in Pet Mode matching 8.41.17 AM */
+    .head-lift {
+        transform: translateY(-2.5px);
+        transition: transform 0.2s ease-out;
+    }
+
     .wobble {
         animation: wobble-shake 0.15s infinite alternate ease-in-out;
     }
@@ -787,7 +1110,7 @@
             transform: translateY(0);
         }
         100% {
-            transform: translateY(-4px);
+            transform: translateY(-3px);
         }
     }
     @keyframes scroll-lean {

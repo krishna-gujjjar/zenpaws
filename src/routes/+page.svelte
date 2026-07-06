@@ -24,7 +24,13 @@
     let paperLength = 0;
     let showSettings = false;
     let petType: "cat" | "panda" | "parrot" = "cat";
-    let catPattern: "black" | "siamese" | "orange" | "white" | "gray" = "black";
+    let catPattern:
+        | "black"
+        | "siamese"
+        | "orange"
+        | "mackerel"
+        | "white"
+        | "gray" = "black";
     let catState:
         | "idle"
         | "hunt"
@@ -74,6 +80,23 @@
             kneadInterval = null;
         }
     }
+
+    // --- Drag ---
+    // function startDragging(e: MouseEvent) {
+    //     if (e.button !== 0) {
+    //         return;
+    //     }
+    //     e.preventDefault();
+    //     isDragging = true;
+    //     catState = "idle";
+    //     shakeDetector.reset();
+    //     appWindow
+    //         .setFocus()
+    //         .then(() => appWindow.startDragging())
+    //         .catch((err: unknown) => {
+    //             console.debug("[Comnyang] drag cancelled", err);
+    //         });
+    // }
 
     function stopDragging() {
         isDragging = false;
