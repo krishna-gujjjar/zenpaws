@@ -8,6 +8,10 @@ use tauri::Manager;
 
 #[cfg(target_os = "macos")]
 mod keyboard;
+#[cfg(target_os = "linux")]
+mod keyboard_linux;
+#[cfg(target_os = "windows")]
+mod keyboard_win;
 
 struct TimerState {
     stop_flag: Arc<Mutex<bool>>,
@@ -95,6 +99,10 @@ fn main() {
 
             #[cfg(target_os = "macos")]
             keyboard::start(app.handle().clone());
+            #[cfg(target_os = "windows")]
+            keyboard_win::start(app.handle().clone());
+            #[cfg(target_os = "linux")]
+            keyboard_linux::start(app.handle().clone());
 
             Ok(())
         })
