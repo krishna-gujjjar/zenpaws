@@ -1,5 +1,13 @@
 # 17 - Changelog
 
+## Phase 2 - Networking Foundation
+
+- Implemented mDNS discovery with bounded UDP broadcast fallback.
+- Implemented versioned binary frames, encrypted TCP, post-TLS UUID and username handshake, heartbeat state transitions, and bounded reconnect backoff.
+- Implemented persistent local TLS identity and JSON-backed TOFU peer certificate pin storage.
+- Added Tauri start and stop network commands, inbound accept lifecycle, and mDNS/UDP outbound lifecycle.
+- Recorded DM-only read receipt semantics.
+
 ## Phase 1 — Project Foundation (complete)
 
 - Established the Tauri v2 + React project structure and internal Cargo

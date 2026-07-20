@@ -1,14 +1,14 @@
 # 19 - Known Issues
 
-## Verification environment note
+## Root Tauri package verification in this sandbox
 
-The project owner has confirmed completion of Phase 1. The local environment
-still lacks the Rust toolchain, so it cannot independently rerun the root
-Tauri Clippy command.
+The networking, shared, and settings crates pass their tests and Clippy with
+warnings denied. Full root-package Tauri compilation is blocked in this Linux
+sandbox because the system development package providing `gdk-3.0.pc` is not
+installed. Verify the Tauri commands on a host with the Linux Tauri WebKit and
+GTK prerequisites.
 
 ## Capability validation pending
 
-`pet-window.json` uses the documented narrow window/event permissions, but
-its exact strings must be checked against the schema emitted by the installed
-Tauri version during the first local Tauri run. Pet windows are not created
-until Phase 4.
+Validate the generated Tauri capability schema during the first successful
+`bun run tauri dev`. Pet windows are not created until Phase 4.

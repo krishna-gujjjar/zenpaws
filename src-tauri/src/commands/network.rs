@@ -5,9 +5,10 @@ use std::{
 };
 
 use serde::Serialize;
-use tauri::{AppHandle, Manager};
+use tauri::{AppHandle, Manager, State};
+use zenpaws_database::DatabaseTrustStore;
 use zenpaws_network::{NetworkService, TlsIdentity};
-use zenpaws_settings::{JsonTrustStore, LocalIdentity, load_local_identity, save_local_identity};
+use zenpaws_settings::{LocalIdentity, load_local_identity, save_local_identity};
 use zenpaws_shared::{EventBus, PeerId};
 
 struct NetworkRuntime {
@@ -26,7 +27,11 @@ pub struct NetworkStatus {
 
 /// Starts the local encrypted LAN listener exactly once.
 #[tauri::command]
-pub async fn start_network(app: AppHandle, username: String) -> Result<NetworkStatus, String> {
+pub async fn start_network(
+    app: AppHandle,
+    database: State<'_, crate::DatabaseState>,
+    username: String,
+) -> Result<NetworkStatus, String> {
     if let Some(runtime) = NETWORK_RUNTIME.get() {
         return status_for(&runtime.service);
     }
@@ -47,10 +52,7 @@ pub async fn start_network(app: AppHandle, username: String) -> Result<NetworkSt
     )
     .await
     .map_err(|error| error.to_string())?;
-    let trust_store = Arc::new(
-        JsonTrustStore::open(data_dir.join("peer-trust.json"))
-            .map_err(|error| error.to_string())?,
-    );
+    let trust_store = Arc::new(DatabaseTrustStore::new(Arc::clone(&database.0)));
     let service = Arc::new(service);
     let status = status_for(&service)?;
 

@@ -37,3 +37,12 @@ A phase is not done if any of these fail.
 
 Load testing at the full 50-peer target is a Phase 9/10 concern once
 there's a real build to test - not simulated abstractly here.
+
+## Phase 2 coverage
+
+- Unit tests cover framed envelopes, retry caps, connection degradation, TOFU
+  pin changes, local identity persistence, UDP loopback discovery, pinned TLS
+  loopback, post-TLS handshakes, and network-service task sharing.
+- Manual LAN verification remains required for mDNS and UDP broadcast across
+  actual devices because multicast and broadcast behavior is OS and network
+  dependent.

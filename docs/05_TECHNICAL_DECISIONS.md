@@ -29,6 +29,8 @@ later without re-checking.
 | Serialization / wire format | `serde` + `bincode` | Binary framing per `07_MESSAGE_PROTOCOL.md`; smaller and faster to (de)serialize than JSON for the message/gossip traffic this app generates continuously. |
 | Checksums | `sha2` (SHA-256) | Standard, audited, used consistently for file-transfer integrity and any content-addressed storage. |
 | TLS | `rustls` + `rcgen` (self-signed cert generation for TOFU) | `rustls` avoids a system OpenSSL dependency (relevant for the low-end/varied-OS target); `rcgen` generates the self-signed identity certs each peer needs for TOFU pinning. |
+| Async TLS I/O | `tokio-rustls` | Direct Tokio stream integration for the existing `rustls` configuration; avoids introducing a second TLS stack. |
+| Discovery fallback encoding | `base64` | Public certificate DER is split into bounded mDNS TXT strings; Base64 provides safe text transport without custom encoding code. |
 | Error handling | `thiserror` (library crates) + `anyhow` (binary/command layer) | Standard split: typed errors in `zenpaws-*` crates, ergonomic error propagation in the thin command layer. |
 | Logging | `tracing` | Structured, async-aware, works well with Tokio. |
 | Linting | Clippy, `[workspace.lints.clippy]` in the workspace `Cargo.toml`: `all = "warn"`, `pedantic = "warn"`, `nursery = "warn"`, with `module_name_repetitions` and `must_use_candidate` allowed (noisy, low-value for this codebase's naming conventions). CI runs `cargo clippy --all-targets -- -D warnings`. |

@@ -9,7 +9,12 @@
 
 mod commands;
 
+use std::sync::{Arc, Mutex};
+
 use tauri::Manager;
+
+/// Application-owned database state. Commands borrow it through Tauri state.
+pub struct DatabaseState(pub Arc<Mutex<zenpaws_database::Database>>);
 
 /// Runs the desktop application.
 ///
@@ -19,6 +24,13 @@ use tauri::Manager;
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() -> tauri::Result<()> {
     tauri::Builder::default()
+        .setup(|app| {
+            let path = app.path().app_data_dir()?.join("zenpaws.sqlite");
+            app.manage(DatabaseState(Arc::new(Mutex::new(
+                zenpaws_database::Database::open(path)?,
+            ))));
+            Ok(())
+        })
         .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
             if let Some(window) = app.get_webview_window("main") {
                 let _ = window.set_focus();

@@ -8,14 +8,13 @@ Always resume from this file rather than re-deriving intent from chat history.
   functioning desktop-pet platform. The app identifier presently configured
   is `com.krishna.zenpaws`; confirm ownership before a public release.
 - Replication uses Lamport-clock last-write-wins, tie-broken by peer UUID.
-- Planned transport is TCP, rustls TLS, and TOFU pinning; LAN discovery is
-  `mdns-sd`. These are Phase 2 decisions, not installed dependencies yet.
+- Transport and discovery decisions were implemented in Phase 2: TCP, `rustls`
+  TLS with TOFU pinning, `mdns-sd`, and bounded UDP broadcast fallback.
 - The planned SQLite binding is `rusqlite`, with WAL and FTS5, in Phase 3.
 - Constraints fixed: SHA-256, a 2 GB file maximum, a 25 MB image
   auto-transfer threshold, and two pet-state broadcasts/second/pet.
-- Delivery/read semantics are an unconfirmed default: delivered means an
-  acknowledgement from at least one directly connected peer; read means an
-  acknowledgement from the intended recipient. Resolve before Phase 2.
+- Owner-approved receipt semantics: delivered means acknowledgement from at
+  least one directly connected peer; read acknowledgements are DMs only.
 
 ## Phase 1 — Project Foundation (complete)
 
@@ -36,7 +35,7 @@ Always resume from this file rather than re-deriving intent from chat history.
 - The project owner confirmed the Phase 1 Clippy remediation and marked this
   phase complete. Phase 2 remains blocked on the delivery and read decision.
 
-## Phase 2 - Networking Foundation (in progress)
+## Phase 2 - Networking Foundation (complete)
 
 - Owner approved direct-message-only read acknowledgements. Shared-room
   messages have no read receipt or per-peer seen state.
@@ -89,3 +88,10 @@ Always resume from this file rather than re-deriving intent from chat history.
 - The UDP fallback now runs in the app lifecycle. It broadcasts the bounded
   advertisement at most once every 30 seconds, receives peer advertisements,
   and routes them through the same deduplicated TOFU and TLS connection flow.
+
+## Phase 3 - Database Foundation (in progress)
+
+- Current `rusqlite` documentation was checked before use. `Connection::open_with_flags` supports explicit read-write/create flags; the `bundled` feature supplies a controlled SQLite build with FTS5 support.
+- Added immutable migrations `0001_init.sql` and `0002_messages_fts.sql`, WAL mode, foreign key enforcement, prepared typed peer and settings upserts, keyset message pagination, FTS5 search, and in-memory and disk-backed migration coverage.
+- Tauri setup now opens the app-data `zenpaws.sqlite` database and manages it behind a mutex. The database crate verifies `Database: Send`; root Tauri compilation still requires the unavailable GTK development package in this sandbox.
+

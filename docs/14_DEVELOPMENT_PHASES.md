@@ -4,8 +4,8 @@
 |---|---|---|
 | 0 | Documentation and Architecture | ✅ Complete |
 | 1 | Project Foundation | Complete |
-| 2 | Networking Foundation | In progress |
-| 3 | Database Foundation | Not started |
+| 2 | Networking Foundation | Complete |
+| 3 | Database Foundation | In progress |
 | 4 | Pet Engine | Not started |
 | 5 | Chat System | Not started |
 | 6 | Image System | Not started |
