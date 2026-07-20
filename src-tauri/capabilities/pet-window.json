@@ -1,0 +1,13 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "pet-capability",
+  "description": "Minimal capabilities for transparent pet overlay windows - no filesystem, dialog, or shell access. Permission identifiers below are provisional; verify against the schema Tauri generates on first `cargo tauri dev` (see docs/19_KNOWN_ISSUES.md).",
+  "windows": ["pet-*"],
+  "permissions": [
+    "core:event:default",
+    "core:window:allow-set-ignore-cursor-events",
+    "core:window:allow-set-always-on-top",
+    "core:window:allow-set-position",
+    "core:window:allow-set-size"
+  ]
+}

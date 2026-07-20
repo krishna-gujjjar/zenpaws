@@ -1,0 +1,14 @@
+[package]
+name = "zenpaws-settings"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+zenpaws-shared = { path = "../zenpaws-shared" }
+
+[lints]
+workspace = true

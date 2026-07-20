@@ -1,0 +1,18 @@
+:root {
+  color-scheme: light dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  min-height: 100vh;
+  margin: 0;
+}
+
+/*
+ * Deliberately minimal at Phase 1. Real design tokens (color, type,
+ * layout) are established in Phase 5+ against actual screens - see
+ * docs/11_UI_UX_GUIDELINES.md.
+ */
