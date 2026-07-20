@@ -74,6 +74,12 @@ CREATE TABLE settings (
 );
 ```
 
+## Applied migrations
+
+- `0001_init.sql` creates the documented core tables, FTS5 virtual table, and indexes.
+- `0002_messages_fts.sql` adds FTS synchronization triggers. Existing migration files were not edited.
+- `0003_peer_certificates.sql` stores the public certificate associated with a peer TOFU pin.
+
 ## Indexing
 
 - `messages(room, created_at)` - the hot path for scrollback pagination.

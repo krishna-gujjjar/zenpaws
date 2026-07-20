@@ -89,9 +89,11 @@ Always resume from this file rather than re-deriving intent from chat history.
   advertisement at most once every 30 seconds, receives peer advertisements,
   and routes them through the same deduplicated TOFU and TLS connection flow.
 
-## Phase 3 - Database Foundation (in progress)
+## Phase 3 - Database Foundation (complete)
 
-- Current `rusqlite` documentation was checked before use. `Connection::open_with_flags` supports explicit read-write/create flags; the `bundled` feature supplies a controlled SQLite build with FTS5 support.
-- Added immutable migrations `0001_init.sql` and `0002_messages_fts.sql`, WAL mode, foreign key enforcement, prepared typed peer and settings upserts, keyset message pagination, FTS5 search, and in-memory and disk-backed migration coverage.
-- Tauri setup now opens the app-data `zenpaws.sqlite` database and manages it behind a mutex. The database crate verifies `Database: Send`; root Tauri compilation still requires the unavailable GTK development package in this sandbox.
+- `rusqlite` documentation was checked before use. `Connection::open_with_flags` supports explicit read-write/create flags; the `bundled` feature supplies a controlled SQLite build with FTS5 support.
+- Added immutable migrations `0001_init.sql`, `0002_messages_fts.sql`, and `0003_peer_certificates.sql`. Existing migration files were never edited.
+- Implemented WAL mode, foreign keys, bounded busy timeout, typed peer and settings writes, keyset pagination, FTS5 search, and disk-backed migration coverage.
+- Added `DatabaseTrustStore`, which persists certificate DER and SHA-256 pins in SQLite and rejects changed pins. The network runtime now uses it.
+- Tauri setup opens the app-data `zenpaws.sqlite` behind an `Arc<Mutex<Database>>`. Root Tauri compilation still requires the unavailable GTK development package in this sandbox.
 

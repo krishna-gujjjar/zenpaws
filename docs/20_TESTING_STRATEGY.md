@@ -46,3 +46,7 @@ there's a real build to test - not simulated abstractly here.
 - Manual LAN verification remains required for mDNS and UDP broadcast across
   actual devices because multicast and broadcast behavior is OS and network
   dependent.
+
+## Phase 3 coverage
+
+- Database tests cover migrations, WAL mode, migration reuse on disk, typed writes, FTS5 search, settings persistence, and database-backed TOFU pin rejection.

@@ -52,6 +52,18 @@ pub enum ConnectionState {
     Disconnected,
 }
 
+/// Discrete network-visible pet states. Animation data remains local.
+#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
+pub enum PetSyncState {
+    Away,
+    Celebrate,
+    Notification,
+    Offline,
+    Play,
+    Sleep,
+    Typing,
+}
+
 /// Cross-module events. Feature-specific payloads remain in their owner crate.
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub enum ZenPawsEvent {
@@ -61,6 +73,10 @@ pub enum ZenPawsEvent {
     },
     PeerTrustViolation {
         peer_id: PeerId,
+    },
+    PetStateChanged {
+        pet_instance: Uuid,
+        state: PetSyncState,
     },
 }
 

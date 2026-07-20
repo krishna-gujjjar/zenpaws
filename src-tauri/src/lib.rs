@@ -40,7 +40,9 @@ pub fn run() -> tauri::Result<()> {
         .invoke_handler(tauri::generate_handler![
             commands::app_status,
             commands::network::start_network,
-            commands::network::stop_network
+            commands::network::stop_network,
+            commands::pets::open_pet_window,
+            commands::pets::close_pet_window
         ])
         .run(tauri::generate_context!())
 }

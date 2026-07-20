@@ -5,6 +5,7 @@
 //! `docs/04_SYSTEM_ARCHITECTURE.md` and `docs/15_AI_AGENT_RULES.md`.
 
 mod network;
+mod pets;
 
 use serde::Serialize;
 

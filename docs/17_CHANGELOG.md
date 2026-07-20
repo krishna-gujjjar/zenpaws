@@ -1,5 +1,10 @@
 # 17 - Changelog
 
+## Phase 3 - Database Foundation
+
+- Added bundled SQLite through `rusqlite`, WAL configuration, migrations, FTS5, typed settings, keyset pagination, and disk-backed migration verification.
+- Added SQLite-backed TOFU certificate storage and wired it into the network runtime.
+
 ## Phase 2 - Networking Foundation
 
 - Implemented mDNS discovery with bounded UDP broadcast fallback.

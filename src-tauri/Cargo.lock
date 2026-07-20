@@ -5368,6 +5368,13 @@ version = "0.1.0"
 [[package]]
 name = "zenpaws-pets"
 version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "thiserror 2.0.19",
+ "uuid",
+ "zenpaws-shared",
+]
 
 [[package]]
 name = "zenpaws-settings"

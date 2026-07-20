@@ -1,10 +1,13 @@
-//! Pet state machine, data-driven manifest loading, and overlay-window
-//! management.
+//! Data-driven pet manifests, local state, and synchronized-state rate limits.
 //!
-//! Implemented in Phase 4 (Pet Engine). See
-//! docs/10_PET_ENGINE_SPECIFICATION.md for the design this crate follows.
-//! Must remain functional even if chat is disabled - see
-//! docs/04_SYSTEM_ARCHITECTURE.md.
-//!
-//! Intentionally empty at Phase 1 - this is an honest stub, not a
-//! placeholder implementation, per docs/00_PROJECT_CONSTITUTION.md.
+//! See `docs/10_PET_ENGINE_SPECIFICATION.md`.
+
+mod engine;
+mod manifest;
+mod registry;
+mod state;
+
+pub use engine::{PetEngine, PetEngineError};
+pub use manifest::{PetManifest, PetManifestError};
+pub use registry::{PetRegistry, PetRegistryError};
+pub use state::{PetInstance, PetState, PetStateError};
