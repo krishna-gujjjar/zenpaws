@@ -124,7 +124,12 @@ impl Database {
     /// # Errors
     ///
     /// Returns an error when reaction persistence fails.
-    pub fn add_reaction(&self, message_id: Uuid, peer_id: PeerId, emoji: &str) -> Result<(), DatabaseError> {
+    pub fn add_reaction(
+        &self,
+        message_id: Uuid,
+        peer_id: PeerId,
+        emoji: &str,
+    ) -> Result<(), DatabaseError> {
         self.connection.execute(
             "INSERT OR IGNORE INTO reactions (message_id, peer_uuid, emoji) VALUES (?1, ?2, ?3)",
             params![message_id.to_string(), peer_id.as_uuid().to_string(), emoji],

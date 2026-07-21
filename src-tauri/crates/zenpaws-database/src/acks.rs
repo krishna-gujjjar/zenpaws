@@ -46,7 +46,12 @@ impl Database {
         self.connection.execute(
             "INSERT OR IGNORE INTO message_acks (message_id, peer_uuid, kind, acked_at)
              VALUES (?1, ?2, ?3, ?4)",
-            params![message_id.to_string(), peer_id.as_uuid().to_string(), kind.as_sql(), acked_at],
+            params![
+                message_id.to_string(),
+                peer_id.as_uuid().to_string(),
+                kind.as_sql(),
+                acked_at
+            ],
         )?;
         Ok(())
     }

@@ -61,6 +61,7 @@ tauri-plugin-single-instance = "2"
 tauri-plugin-window-state = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+uuid.workspace = true
 
 zenpaws-shared = { path = "crates/zenpaws-shared" }
 zenpaws-network = { path = "crates/zenpaws-network" }

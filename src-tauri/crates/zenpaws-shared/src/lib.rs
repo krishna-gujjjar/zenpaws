@@ -78,6 +78,11 @@ pub enum ZenPawsEvent {
         pet_instance: Uuid,
         state: PetSyncState,
     },
+    TypingChanged {
+        peer_id: PeerId,
+        room: String,
+        is_typing: bool,
+    },
 }
 
 /// In-process fanout for decoupled backend modules.

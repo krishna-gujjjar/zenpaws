@@ -42,6 +42,23 @@ pub async fn start_network(
         .map_err(|error| error.to_string())?;
     let path = data_dir.join("network-identity.json");
     let (identity, tls_identity) = load_or_create_identity(&path, username)?;
+    let last_seen_at = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map_err(|error| error.to_string())?
+        .as_millis()
+        .try_into()
+        .map_err(|_| "system timestamp exceeds i64".to_owned())?;
+    database
+        .0
+        .lock()
+        .map_err(|_| "database lock poisoned".to_owned())?
+        .upsert_peer(
+            identity.peer_id(),
+            identity.username(),
+            &tls_identity.pin().as_bytes(),
+            last_seen_at,
+        )
+        .map_err(|error| error.to_string())?;
     let service = NetworkService::bind(
         SocketAddr::from(([0, 0, 0, 0], 0)),
         identity.peer_id(),
@@ -83,6 +100,13 @@ pub fn stop_network() -> Result<(), String> {
         .service
         .shutdown()
         .map_err(|error| error.to_string())
+}
+
+pub(super) fn local_peer_id() -> Result<PeerId, String> {
+    NETWORK_RUNTIME
+        .get()
+        .map(|runtime| runtime.service.local_peer_id())
+        .ok_or_else(|| "network service is not running".to_owned())
 }
 
 fn status_for(service: &NetworkService) -> Result<NetworkStatus, String> {

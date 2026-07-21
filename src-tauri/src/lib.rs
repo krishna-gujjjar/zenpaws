@@ -42,7 +42,12 @@ pub fn run() -> tauri::Result<()> {
             commands::network::start_network,
             commands::network::stop_network,
             commands::pets::open_pet_window,
-            commands::pets::close_pet_window
+            commands::pets::close_pet_window,
+            commands::chat::list_messages,
+            commands::chat::search_messages,
+            commands::chat::send_message,
+            commands::chat::edit_message,
+            commands::chat::delete_message
         ])
         .run(tauri::generate_context!())
 }
