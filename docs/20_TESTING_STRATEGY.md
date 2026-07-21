@@ -50,3 +50,8 @@ there's a real build to test - not simulated abstractly here.
 ## Phase 3 coverage
 
 - Database tests cover migrations, WAL mode, migration reuse on disk, typed writes, FTS5 search, settings persistence, and database-backed TOFU pin rejection.
+
+## Phase 4 coverage
+
+- Pet tests cover local state deduplication, rate limiting, and local-only versus synchronized state mapping.
+- Desktop-host testing must verify transparent and click-through pet overlays on Windows, Linux, and macOS.

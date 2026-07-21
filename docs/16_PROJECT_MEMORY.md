@@ -97,3 +97,8 @@ Always resume from this file rather than re-deriving intent from chat history.
 - Added `DatabaseTrustStore`, which persists certificate DER and SHA-256 pins in SQLite and rejects changed pins. The network runtime now uses it.
 - Tauri setup opens the app-data `zenpaws.sqlite` behind an `Arc<Mutex<Database>>`. Root Tauri compilation still requires the unavailable GTK development package in this sandbox.
 
+
+## Phase 5 - Chat System (in progress)
+
+- Owner approved transition after Phase 4. Start from typed database message APIs, the event bus, and the owner-approved DM-only read receipt policy.
+

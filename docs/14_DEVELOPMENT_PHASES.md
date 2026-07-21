@@ -6,8 +6,8 @@
 | 1 | Project Foundation | Complete |
 | 2 | Networking Foundation | Complete |
 | 3 | Database Foundation | Complete |
-| 4 | Pet Engine | In progress |
-| 5 | Chat System | Not started |
+| 4 | Pet Engine | Complete |
+| 5 | Chat System | In progress |
 | 6 | Image System | Not started |
 | 7 | File Transfer System | Not started |
 | 8 | Notification System | Not started |

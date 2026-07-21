@@ -1,5 +1,10 @@
 # 17 - Changelog
 
+## Phase 4 - Pet Engine
+
+- Added data-driven pet manifest and registry validation, local state and cursor behavior, discrete sync event handling, and transparent pet-window commands.
+- Added the pet asset prompt kit and generated review-pending sprite references and strips outside the phase commit.
+
 ## Phase 3 - Database Foundation
 
 - Added bundled SQLite through `rusqlite`, WAL configuration, migrations, FTS5, typed settings, keyset pagination, and disk-backed migration verification.

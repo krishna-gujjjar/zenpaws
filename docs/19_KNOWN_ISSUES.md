@@ -12,3 +12,7 @@ GTK prerequisites.
 
 Validate the generated Tauri capability schema during the first successful
 `bun run tauri dev`. Pet windows are not created until Phase 4.
+
+## Pet assets pending owner review
+
+Generated pet references and sprite strips are not yet production assets. Their alpha transparency, frame alignment, actual frame counts, and provider commercial-use terms must be reviewed before `manifest.json`, `LICENSE.txt`, and asset commits are created.

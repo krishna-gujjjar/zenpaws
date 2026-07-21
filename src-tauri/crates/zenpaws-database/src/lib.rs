@@ -8,9 +8,11 @@ use rusqlite::{Connection, OpenFlags, params};
 use thiserror::Error;
 use zenpaws_shared::PeerId;
 
+mod acks;
 mod messages;
 mod trust;
 
+pub use acks::{MessageAckError, MessageAckKind};
 pub use messages::{MessageCursor, MessageRecord};
 pub use trust::DatabaseTrustStore;
 

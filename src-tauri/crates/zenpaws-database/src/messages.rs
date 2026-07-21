@@ -93,6 +93,45 @@ impl Database {
         Ok(messages)
     }
 
+    /// Edits a message body and records the edit timestamp.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error when the message update fails.
+    pub fn edit_message(&self, id: Uuid, body: &str, edited_at: i64) -> Result<(), DatabaseError> {
+        self.connection.execute(
+            "UPDATE messages SET body = ?1, edited_at = ?2 WHERE id = ?3",
+            params![body, edited_at, id.to_string()],
+        )?;
+        Ok(())
+    }
+
+    /// Marks a message deleted while retaining replication history.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error when the message update fails.
+    pub fn delete_message(&self, id: Uuid, deleted_at: i64) -> Result<(), DatabaseError> {
+        self.connection.execute(
+            "UPDATE messages SET deleted_at = ?1 WHERE id = ?2",
+            params![deleted_at, id.to_string()],
+        )?;
+        Ok(())
+    }
+
+    /// Adds one unique emoji reaction through a prepared statement.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error when reaction persistence fails.
+    pub fn add_reaction(&self, message_id: Uuid, peer_id: PeerId, emoji: &str) -> Result<(), DatabaseError> {
+        self.connection.execute(
+            "INSERT OR IGNORE INTO reactions (message_id, peer_uuid, emoji) VALUES (?1, ?2, ?3)",
+            params![message_id.to_string(), peer_id.as_uuid().to_string(), emoji],
+        )?;
+        Ok(())
+    }
+
     /// Searches locally indexed message text.
     ///
     /// # Errors
