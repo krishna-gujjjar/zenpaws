@@ -4,9 +4,9 @@
 //! `zenpaws-*` crate, and maps its result to a serializable type. See
 //! `docs/04_SYSTEM_ARCHITECTURE.md` and `docs/15_AI_AGENT_RULES.md`.
 
-mod chat;
-mod network;
-mod pets;
+pub mod chat;
+pub mod network;
+pub mod pets;
 
 use serde::Serialize;
 

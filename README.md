@@ -12,15 +12,21 @@ verification. No product feature is implemented yet; see
 
 ## Prerequisites
 
-- [Bun](https://bun.sh/) 1.3.14 or newer
-- [Rust](https://www.rust-lang.org/tools/install) via `rustup` (edition 2024)
+- [mise](https://mise.jdx.dev/)
+- Bun 1.3.14 and Rust 1.97.1, installed from `.mise.toml`
 - Tauri v2 platform prerequisites: WebView2 on Windows, platform build tools
   on Linux, or Xcode Command Line Tools on macOS
+
+Install the pinned toolchain and dependencies with:
+
+```bash
+mise install
+bun install --frozen-lockfile
+```
 
 ## Start development
 
 ```bash
-bun install --frozen-lockfile
 bun run tauri dev
 ```
 

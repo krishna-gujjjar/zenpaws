@@ -6,9 +6,21 @@
     "useIgnoreFile": true
   },
   "files": {
-    "includes": ["src/**", "vite.config.ts", "!**/node_modules", "!**/dist", "!**/target"]
+    "includes": [
+      "src/**",
+      "vite.config.ts",
+      "!**/node_modules",
+      "!**/dist",
+      "!**/target"
+    ]
   },
-  "assist": { "actions": { "source": { "organizeImports": "on" } } },
+  "assist": {
+    "actions": {
+      "source": {
+        "organizeImports": "on"
+      }
+    }
+  },
   "formatter": {
     "enabled": true,
     "indentStyle": "space",
@@ -25,9 +37,13 @@
   "linter": {
     "enabled": true,
     "rules": {
-      "recommended": true,
-      "suspicious": { "noExplicitAny": "error" },
-      "correctness": { "useExhaustiveDependencies": "warn" }
+      "suspicious": {
+        "noExplicitAny": "error"
+      },
+      "correctness": {
+        "useExhaustiveDependencies": "warn"
+      },
+      "preset": "recommended"
     }
   },
   "extends": [

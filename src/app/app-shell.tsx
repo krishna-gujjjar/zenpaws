@@ -13,7 +13,7 @@ import { useAppStatus } from "../hooks/use-app-status";
 export function AppShell(): ReactNode {
   const { data, isLoading, isError } = useAppStatus();
 
-  if (!isLoading && !isError) {
+  if (!(isLoading || isError)) {
     return <ChatShell />;
   }
 

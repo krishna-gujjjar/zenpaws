@@ -1,3 +1,8 @@
+#![allow(
+    clippy::needless_pass_by_value,
+    reason = "Tauri command IPC deserializes owned arguments and State"
+)]
+
 use std::{
     net::SocketAddr,
     sync::{Arc, OnceLock},
@@ -9,7 +14,7 @@ use tauri::{AppHandle, Manager, State};
 use zenpaws_database::DatabaseTrustStore;
 use zenpaws_network::{NetworkService, TlsIdentity};
 use zenpaws_settings::{LocalIdentity, load_local_identity, save_local_identity};
-use zenpaws_shared::{EventBus, PeerId};
+use zenpaws_shared::{EventBus, PeerId, PeerTrustStore};
 
 struct NetworkRuntime {
     service: Arc<NetworkService>,
@@ -69,7 +74,8 @@ pub async fn start_network(
     )
     .await
     .map_err(|error| error.to_string())?;
-    let trust_store = Arc::new(DatabaseTrustStore::new(Arc::clone(&database.0)));
+    let trust_store: Arc<dyn PeerTrustStore> =
+        Arc::new(DatabaseTrustStore::new(Arc::clone(&database.0)));
     let service = Arc::new(service);
     let status = status_for(&service)?;
 

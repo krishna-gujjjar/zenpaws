@@ -11,7 +11,7 @@ mod commands;
 
 use std::sync::{Arc, Mutex};
 
-use tauri::Manager;
+use tauri::{Emitter, Manager};
 
 /// Application-owned database state. Commands borrow it through Tauri state.
 pub struct DatabaseState(pub Arc<Mutex<zenpaws_database::Database>>);
@@ -29,6 +29,15 @@ pub fn run() -> tauri::Result<()> {
             app.manage(DatabaseState(Arc::new(Mutex::new(
                 zenpaws_database::Database::open(path)?,
             ))));
+            let bus = zenpaws_shared::EventBus::new(256);
+            let mut events = bus.subscribe();
+            let handle = app.handle().clone();
+            tauri::async_runtime::spawn(async move {
+                while let Ok(event) = events.recv().await {
+                    let _ = handle.emit("zenpaws://event", event);
+                }
+            });
+            app.manage(bus);
             Ok(())
         })
         .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
@@ -46,6 +55,9 @@ pub fn run() -> tauri::Result<()> {
             commands::chat::list_messages,
             commands::chat::search_messages,
             commands::chat::send_message,
+            commands::chat::add_reaction,
+            commands::chat::set_typing,
+            commands::chat::message_status,
             commands::chat::edit_message,
             commands::chat::delete_message
         ])

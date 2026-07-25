@@ -101,4 +101,3 @@ Always resume from this file rather than re-deriving intent from chat history.
 ## Phase 5 - Chat System (in progress)
 
 - Owner approved transition after Phase 4. Start from typed database message APIs, the event bus, and the owner-approved DM-only read receipt policy.
-

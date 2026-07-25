@@ -1,7 +1,13 @@
+#![allow(
+    clippy::needless_pass_by_value,
+    reason = "Tauri command IPC deserializes owned arguments and State"
+)]
+
 use serde::Serialize;
 use tauri::State;
 use uuid::Uuid;
 use zenpaws_database::{MessageCursor, MessageRecord};
+use zenpaws_shared::{EventBus, ZenPawsEvent};
 
 use crate::DatabaseState;
 
@@ -35,13 +41,16 @@ pub fn list_messages(
 ) -> Result<Vec<ChatMessage>, String> {
     let cursor = cursor
         .map(|cursor| {
-            Ok(MessageCursor {
+            Ok::<MessageCursor, String>(MessageCursor {
                 created_at: cursor.created_at,
                 id: Uuid::parse_str(&cursor.id).map_err(|error| error.to_string())?,
             })
         })
         .transpose()?;
-    let database = database.0.lock().map_err(|_| "database lock poisoned".to_owned())?;
+    let database = database
+        .0
+        .lock()
+        .map_err(|_| "database lock poisoned".to_owned())?;
     database
         .messages_before(&room, cursor.as_ref(), limit)
         .map(|messages| messages.iter().map(project_message).collect())
@@ -55,7 +64,10 @@ pub fn search_messages(
     query: String,
     limit: u32,
 ) -> Result<Vec<ChatMessage>, String> {
-    let database = database.0.lock().map_err(|_| "database lock poisoned".to_owned())?;
+    let database = database
+        .0
+        .lock()
+        .map_err(|_| "database lock poisoned".to_owned())?;
     database
         .search_messages(&query, limit)
         .map(|messages| messages.iter().map(project_message).collect())
@@ -99,6 +111,66 @@ pub fn send_message(
         .insert_message(&message)
         .map_err(|error| error.to_string())?;
     Ok(project_message(&message))
+}
+
+/// Adds a local peer reaction to a message.
+#[tauri::command]
+pub fn add_reaction(
+    database: State<'_, DatabaseState>,
+    message_id: String,
+    emoji: String,
+) -> Result<(), String> {
+    if emoji.is_empty() || emoji.chars().count() > 16 {
+        return Err("reaction emoji is invalid".to_owned());
+    }
+    let message_id = Uuid::parse_str(&message_id).map_err(|error| error.to_string())?;
+    let peer_id = super::network::local_peer_id()?;
+    database
+        .0
+        .lock()
+        .map_err(|_| "database lock poisoned".to_owned())?
+        .add_reaction(message_id, peer_id, &emoji)
+        .map_err(|error| error.to_string())
+}
+
+/// Publishes ephemeral typing state for the active local peer.
+#[tauri::command]
+pub fn set_typing(bus: State<'_, EventBus>, room: String, is_typing: bool) -> Result<(), String> {
+    let peer_id = super::network::local_peer_id()?;
+    bus.publish(ZenPawsEvent::TypingChanged {
+        peer_id,
+        room,
+        is_typing,
+    });
+    Ok(())
+}
+
+/// Returns acknowledgement status for a direct-message recipient.
+#[tauri::command]
+pub fn message_status(
+    database: State<'_, DatabaseState>,
+    message_id: String,
+    peer_id: String,
+) -> Result<ChatMessageStatus, String> {
+    let message_id = Uuid::parse_str(&message_id).map_err(|error| error.to_string())?;
+    let peer_id = Uuid::parse_str(&peer_id).map_err(|error| error.to_string())?;
+    let status = database
+        .0
+        .lock()
+        .map_err(|_| "database lock poisoned".to_owned())?
+        .message_status(message_id, zenpaws_shared::PeerId::from_uuid(peer_id))
+        .map_err(|error| error.to_string())?;
+    Ok(ChatMessageStatus {
+        delivered: status.delivered,
+        read: status.read,
+    })
+}
+
+/// Direct-message acknowledgement state for the frontend.
+#[derive(Serialize)]
+pub struct ChatMessageStatus {
+    pub delivered: bool,
+    pub read: bool,
 }
 
 /// Edits a locally visible message body.

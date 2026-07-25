@@ -25,3 +25,6 @@ src-tauri/gen/
 # Env
 .env
 .env.local
+
+# typescript build
+*.tsbuildinfo

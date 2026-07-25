@@ -1,5 +1,5 @@
+import { type InfiniteData, useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
-import { useQuery } from "@tanstack/react-query";
 
 export interface ChatMessage {
   authorId: string;
@@ -15,7 +15,7 @@ export interface ChatCursor {
   id: string;
 }
 
-interface ListMessagesArgs {
+interface ListMessagesArgs extends Record<string, unknown> {
   cursor?: ChatCursor;
   limit: number;
   room: string;
@@ -30,7 +30,31 @@ export function useMessages(room: string, cursor?: ChatCursor) {
         room,
       }),
     queryKey: ["messages", room, cursor?.createdAt, cursor?.id],
-    staleTime: Infinity,
+    staleTime: Number.POSITIVE_INFINITY,
+  });
+}
+
+export function useInfiniteMessages(room: string) {
+  return useInfiniteQuery<
+    ChatMessage[],
+    Error,
+    InfiniteData<ChatMessage[]>,
+    readonly ["messages", string],
+    ChatCursor | undefined
+  >({
+    getNextPageParam: (page) => {
+      const last = page.at(-1);
+      return last ? { createdAt: last.createdAt, id: last.id } : undefined;
+    },
+    initialPageParam: undefined as ChatCursor | undefined,
+    queryFn: ({ pageParam }) =>
+      invoke<ChatMessage[]>("list_messages", {
+        cursor: pageParam,
+        limit: 50,
+        room,
+      }),
+    queryKey: ["messages", room],
+    staleTime: Number.POSITIVE_INFINITY,
   });
 }
 
@@ -39,10 +63,10 @@ export function useMessageSearch(query: string) {
     enabled: query.trim().length > 0,
     queryFn: () => invoke<ChatMessage[]>("search_messages", { limit: 50, query }),
     queryKey: ["message-search", query],
-    staleTime: Infinity,
+    staleTime: Number.POSITIVE_INFINITY,
   });
 }
 
 export async function listMessages(args: ListMessagesArgs): Promise<ChatMessage[]> {
-  return invoke<ChatMessage[]>("list_messages", args);
+  return await invoke<ChatMessage[]>("list_messages", args);
 }

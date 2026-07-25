@@ -1,3 +1,8 @@
+#![allow(
+    clippy::needless_pass_by_value,
+    reason = "Tauri command IPC deserializes owned arguments and State"
+)]
+
 use tauri::{AppHandle, Manager, WebviewUrl, WebviewWindowBuilder};
 use uuid::Uuid;
 use zenpaws_pets::PetRegistry;
@@ -28,7 +33,6 @@ pub fn open_pet_window(app: AppHandle, manifest_id: String) -> Result<PetWindowS
         .decorations(false)
         .resizable(false)
         .skip_taskbar(true)
-        .transparent(true)
         .build()
         .map_err(|error| error.to_string())?;
     window

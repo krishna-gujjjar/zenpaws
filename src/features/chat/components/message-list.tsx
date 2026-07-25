@@ -1,44 +1,54 @@
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { useRef } from "react";
-import { useMessages } from "../../../queries/messages";
+import { useCallback, useRef } from "react";
+import { type ChatMessage, useInfiniteMessages } from "../../../queries/messages";
+import { MessageItem } from "./message-item";
 
 interface MessageListProps {
+  onReply: (message: ChatMessage) => void;
   room: string;
 }
 
-export function MessageList({ room }: MessageListProps) {
+export function MessageList({ onReply, room }: MessageListProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
-  const messages = useMessages(room);
+  const messages = useInfiniteMessages(room);
+  const items = messages.data?.pages.flat() ?? [];
   const rows = useVirtualizer({
-    count: messages.data?.length ?? 0,
+    count: items.length,
     estimateSize: () => 52,
     getScrollElement: () => scrollRef.current,
     overscan: 8,
   });
+  const loadOlder = useCallback(() => {
+    messages.fetchNextPage().catch(() => undefined);
+  }, [messages]);
 
   if (messages.isError) {
     return <p role="alert">Could not load messages.</p>;
   }
 
   return (
-    <div aria-label="Messages" ref={scrollRef} style={{ height: "100%", overflow: "auto" }}>
+    <section aria-label="Messages" ref={scrollRef} style={{ height: "100%", overflow: "auto" }}>
+      {messages.hasNextPage ? (
+        <button onClick={loadOlder} type="button">
+          Load older messages
+        </button>
+      ) : null}
       <div style={{ height: rows.getTotalSize(), position: "relative" }}>
         {rows.getVirtualItems().map((item) => {
-          const message = messages.data?.[item.index];
+          const message = items[item.index];
           if (!message) {
             return null;
           }
           return (
-            <article
+            <div
               key={message.id}
               style={{ left: 0, position: "absolute", top: item.start, width: "100%" }}
             >
-              <strong>{message.authorId}</strong>
-              <p>{message.body}</p>
-            </article>
+              <MessageItem message={message} onReply={onReply} room={room} />
+            </div>
           );
         })}
       </div>
-    </div>
+    </section>
   );
 }
