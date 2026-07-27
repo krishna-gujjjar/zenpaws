@@ -73,7 +73,9 @@ export function MessageList({ onReply, room }: MessageListProps) {
           }
           return (
             <div
+              data-index={item.index}
               key={message.id}
+              ref={rows.measureElement}
               style={{
                 left: 0,
                 position: "absolute",

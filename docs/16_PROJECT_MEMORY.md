@@ -128,3 +128,7 @@ Always resume from this file rather than re-deriving intent from chat history.
 - Extended the frontend event bridge to invalidate the feed for remote deletes and reactions as well as remote edits and incoming messages.
 - Added Tailwind CSS v4 and the shadcn/ui Vite foundation, then installed the Chatcn message and chat-container components from the documented registry URL without the stale `.json` suffix. The Chatcn prompt-input component was intentionally not used because the ZenPaws composer uses a contenteditable input.
 - Integrated Chatcn MessageContent and shadcn Avatar/AvatarFallback into the live message row while preserving ZenPaws actions, author identity, and LAN callbacks.
+- Completed delete-state projection: deleted messages now expose a deleted flag to the frontend and render as `Message deleted` instead of showing the old body.
+- Fixed Vite dependency-scan resolution by adding the `@` alias to `vite.config.ts`, matching TypeScript and shadcn imports. Added `@types/node` for the Vite config and ignored Bun, Cargo, Rustup, local-tool, node_modules, and Tauri generated directories to prevent unnecessary file watchers.
+- Fixed the Tailwind v4 source scan scope with `@import "tailwindcss" source("../")`, which stopped Vite production builds from scanning the entire workspace/toolchain and resolved the previous SIGKILL build failure.
+- Production frontend build now passes after Tailwind source scoping and the Chatcn/shadcn integration. The generated bundle is approximately 433 KB JavaScript and 40 KB CSS before gzip.

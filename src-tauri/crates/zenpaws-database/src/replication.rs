@@ -184,3 +184,95 @@ impl Database {
         Ok(rows.collect::<Result<Vec<_>, _>>()?)
     }
 }
+
+impl Database {
+    /// Returns whether a message has been soft-deleted.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error when the message state cannot be queried.
+    pub fn message_is_deleted(&self, message_id: uuid::Uuid) -> Result<bool, DatabaseError> {
+        let result = self.connection.query_row(
+            "SELECT deleted_at IS NOT NULL FROM messages WHERE id = ?1",
+            [message_id.to_string()],
+            |row| row.get(0),
+        );
+        match result {
+            Ok(deleted) => Ok(deleted),
+            Err(rusqlite::Error::QueryReturnedNoRows) => Ok(false),
+            Err(error) => Err(DatabaseError::Sqlite(error)),
+        }
+    }
+}
+
+impl Database {
+    /// Toggles one peer's reaction and returns whether it was added.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error when the reaction cannot be changed.
+    pub fn toggle_reaction(
+        &self,
+        message_id: uuid::Uuid,
+        peer_id: PeerId,
+        emoji: &str,
+    ) -> Result<bool, DatabaseError> {
+        let deleted = self.connection.execute(
+            "DELETE FROM reactions WHERE message_id = ?1 AND peer_uuid = ?2 AND emoji = ?3",
+            params![message_id.to_string(), peer_id.as_uuid().to_string(), emoji],
+        )?;
+        if deleted > 0 {
+            return Ok(false);
+        }
+        self.connection.execute(
+            "INSERT INTO reactions (message_id, peer_uuid, emoji) VALUES (?1, ?2, ?3)",
+            params![message_id.to_string(), peer_id.as_uuid().to_string(), emoji],
+        )?;
+        Ok(true)
+    }
+}
+
+impl Database {
+    /// Removes one peer reaction idempotently.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error when the reaction cannot be removed.
+    pub fn remove_reaction(
+        &self,
+        message_id: uuid::Uuid,
+        peer_id: PeerId,
+        emoji: &str,
+    ) -> Result<(), DatabaseError> {
+        self.connection.execute(
+            "DELETE FROM reactions WHERE message_id = ?1 AND peer_uuid = ?2 AND emoji = ?3",
+            params![message_id.to_string(), peer_id.as_uuid().to_string(), emoji],
+        )?;
+        Ok(())
+    }
+}
+
+impl Database {
+    /// Returns the author name and body for a reply target.
+    pub fn reply_preview(
+        &self,
+        message_id: Option<uuid::Uuid>,
+    ) -> Result<Option<(String, String)>, DatabaseError> {
+        let Some(message_id) = message_id else {
+            return Ok(None);
+        };
+        let result = self.connection.query_row(
+            "SELECT p.username, m.body
+             FROM messages AS m
+             JOIN peers AS p ON p.uuid = m.author_uuid
+             WHERE m.id = ?1",
+            [message_id.to_string()],
+            |row| Ok((row.get(0)?, row.get(1)?)),
+        );
+        match result {
+            Ok(preview) => Ok(Some(preview)),
+            Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
+            Err(error) => Err(DatabaseError::Sqlite(error)),
+        }
+    }
+}

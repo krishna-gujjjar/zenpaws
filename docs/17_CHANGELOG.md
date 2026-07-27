@@ -141,3 +141,15 @@
 - Skipped Chatcn `prompt-input` because its textarea-based API conflicts with the approved contenteditable composer requirement.
 
 - Added Chatcn message presentation and shadcn avatar primitives to live chat rows.
+
+- Completed deleted-message UI projection and placeholder rendering.
+
+## Vite and shadcn path resolution
+
+- Fixed unresolved `@/lib/utils`, `@/components/ui/avatar`, and `@/components/ui/tooltip` imports by adding the Vite `@` alias.
+- Added Node typings for the Vite configuration.
+- Reduced Vite watcher scope to avoid dependency/toolchain directories.
+
+- Scoped Tailwind v4 source detection to the frontend source tree and restored successful production builds.
+
+- Verified the production Vite build after the Tailwind and Chatcn integration.

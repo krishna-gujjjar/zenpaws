@@ -106,10 +106,11 @@ pub enum ZenPawsEvent {
         lamport_counter: i64,
         lamport_peer: PeerId,
     },
-    MessageReactionAdded {
+    MessageReactionChanged {
         message_id: Uuid,
         peer_id: PeerId,
         emoji: String,
+        removed: bool,
     },
     MessageAckReceived {
         message_id: Uuid,

@@ -132,8 +132,20 @@ fn project_message_for(
         .peer_username(message.author)
         .map_err(|error| error.to_string())?
         .unwrap_or_else(|| author_id.clone());
+    let deleted = database
+        .message_is_deleted(message.id)
+        .map_err(|error| error.to_string())?;
+    let reply_preview = database
+        .reply_preview(message.reply_to)
+        .map_err(|error| error.to_string())?;
     let reactions = database
         .reactions_for_message(message.id)
         .map_err(|error| error.to_string())?;
-    Ok(types::project_message(message, author_name, reactions))
+    Ok(types::project_message(
+        message,
+        author_name,
+        deleted,
+        reactions,
+        reply_preview,
+    ))
 }

@@ -1,4 +1,4 @@
-@import "tailwindcss";
+@import "tailwindcss" source("../");
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 @import "@fontsource-variable/geist";
@@ -723,4 +723,71 @@ body,
   color: #f5f7fb;
   font-size: 12px;
   padding: 3px 7px;
+}
+
+.message-deleted {
+  color: #8796b2;
+  font-style: italic;
+  margin: 8px 0;
+}
+
+/* Chatcn MessageContent is intentionally flattened into the ZenPaws virtualized row. */
+.message-body {
+  background: transparent !important;
+  color: #e5eaf3 !important;
+  max-width: none !important;
+  padding: 0 !important;
+}
+
+.message-body span {
+  color: inherit;
+}
+
+.chat-panel,
+.chat-header h1,
+.chat-header .eyebrow,
+.chat-sidebar,
+.chat-sidebar strong,
+.chat-sidebar .sidebar-label,
+.message-item {
+  color: #f8f7f4;
+}
+
+.setup-page,
+.setup-page h1,
+.setup-page p,
+.setup-page label,
+.status-page,
+.status-page h1,
+.status-page p {
+  color: #f8f7f4;
+}
+
+.setup-page {
+  background: radial-gradient(circle at 50% 0%, #243354, #111827 60%);
+}
+
+.setup-card {
+  background: #1e293b;
+}
+
+.reply-preview {
+  border-left: 2px solid #f5b971;
+  display: grid;
+  gap: 2px;
+  margin: 8px 0;
+  padding-left: 8px;
+}
+
+.reply-preview strong {
+  color: #f5b971;
+  font-size: 12px;
+}
+
+.reply-preview span {
+  color: #aebbd0;
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }

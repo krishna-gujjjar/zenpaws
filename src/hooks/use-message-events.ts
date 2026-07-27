@@ -6,7 +6,7 @@ interface MessageEventPayload {
   MessageAckReceived?: { message_id: string };
   MessageDeleted?: { message_id: string };
   MessageEdited?: { message_id: string };
-  MessageReactionAdded?: { message_id: string };
+  MessageReactionChanged?: { message_id: string };
   MessageReceived?: { room: string };
 }
 
@@ -27,7 +27,7 @@ export function useMessageEvents(room: string): void {
         event.payload.MessageReceived?.room === room ||
         event.payload.MessageDeleted ||
         event.payload.MessageEdited ||
-        event.payload.MessageReactionAdded
+        event.payload.MessageReactionChanged
       ) {
         client.invalidateQueries({ queryKey: ["messages"] }).catch(() => null);
       }

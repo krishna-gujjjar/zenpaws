@@ -1,7 +1,7 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
 import {
-  type ChangeEvent,
+  type FormEvent,
   type MouseEvent,
   useCallback,
   useEffect,
@@ -32,6 +32,7 @@ export function MessageItem({ message, onReply, room }: MessageItemProps) {
   } | null>(null);
   const client = useQueryClient();
   const status = useMessageStatus(message.id, room);
+  const editRef = useRef<HTMLDivElement>(null);
   const peerId = isDirectRoom(room) ? room.slice(3) : null;
   const localPeerId = window.localStorage.getItem("zenpaws.peerId");
   const authorLabel =
@@ -75,8 +76,8 @@ export function MessageItem({ message, onReply, room }: MessageItemProps) {
     setEditing(false);
     setContextMenu(null);
   }, [body, message.id, refreshMessages, room]);
-  const changeBody = useCallback((event: ChangeEvent<HTMLTextAreaElement>) => {
-    setBody(event.target.value);
+  const changeBody = useCallback((event: FormEvent<HTMLDivElement>) => {
+    setBody(event.currentTarget.textContent ?? "");
   }, []);
   const reply = useCallback(() => {
     onReply(message);
@@ -86,6 +87,12 @@ export function MessageItem({ message, onReply, room }: MessageItemProps) {
     setEditing(true);
     setContextMenu(null);
   }, []);
+  useEffect(() => {
+    if (editing && editRef.current) {
+      editRef.current.textContent = body;
+    }
+  }, [editing]);
+
   const openContextMenu = useCallback((event: MouseEvent<HTMLElement>) => {
     event.preventDefault();
     setContextMenu({ x: event.clientX, y: event.clientY });
@@ -126,12 +133,18 @@ export function MessageItem({ message, onReply, room }: MessageItemProps) {
           </Avatar>
           <strong>{authorLabel}</strong>
         </div>
-        {editing ? (
+        {message.deleted ? (
+          <p className="message-deleted">Message deleted</p>
+        ) : editing ? (
           <>
-            <textarea
+            <div
               aria-label="Edit message"
-              onChange={changeBody}
-              value={body}
+              className="message-input edit-message-input"
+              contentEditable
+              onInput={changeBody}
+              ref={editRef}
+              role="textbox"
+              suppressContentEditableWarning
             />
             <button onClick={saveEdit} type="button">
               Save message
@@ -160,7 +173,12 @@ export function MessageItem({ message, onReply, room }: MessageItemProps) {
             ))}
           </div>
         ) : null}
-        {message.replyTo ? <small>Replying to {message.replyTo}</small> : null}
+        {message.replyTo ? (
+          <div className="reply-preview">
+            <strong>{message.replyAuthorName ?? "Message"}</strong>
+            <span>{message.replyBody ?? "Original message unavailable"}</span>
+          </div>
+        ) : null}
         <div className="message-meta">
           <span>
             {messageStatusLabel(
@@ -193,9 +211,6 @@ export function MessageItem({ message, onReply, room }: MessageItemProps) {
           </button>
           <button onClick={remove} role="menuitem" type="button">
             Delete message
-          </button>
-          <button onClick={closeContextMenu} role="menuitem" type="button">
-            Close menu
           </button>
         </div>
       ) : null}

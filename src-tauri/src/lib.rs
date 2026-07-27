@@ -80,12 +80,17 @@ fn persist_event(database: &zenpaws_database::Database, event: &zenpaws_shared::
                 },
             );
         }
-        zenpaws_shared::ZenPawsEvent::MessageReactionAdded {
+        zenpaws_shared::ZenPawsEvent::MessageReactionChanged {
             message_id,
             peer_id,
             emoji,
+            removed,
         } => {
-            let _ = database.add_reaction(*message_id, *peer_id, emoji);
+            if *removed {
+                let _ = database.remove_reaction(*message_id, *peer_id, emoji);
+            } else {
+                let _ = database.add_reaction(*message_id, *peer_id, emoji);
+            }
         }
         zenpaws_shared::ZenPawsEvent::MessageAckReceived {
             message_id,

@@ -94,10 +94,15 @@ impl PeerConnection {
                                     lamport_counter: payload.clock.counter,
                                     lamport_peer: payload.clock.peer_id,
                                 }),
-                                MessageBody::Reaction { message_id, emoji } => self.state.publish(ZenPawsEvent::MessageReactionAdded {
+                                MessageBody::Reaction {
+                                    message_id,
+                                    emoji,
+                                    removed,
+                                } => self.state.publish(ZenPawsEvent::MessageReactionChanged {
                                     message_id,
                                     peer_id: payload.author,
                                     emoji,
+                                    removed,
                                 }),
                             }
                             if write_envelope(

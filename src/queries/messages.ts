@@ -10,9 +10,12 @@ export interface ChatMessage {
   authorName: string;
   body: string;
   createdAt: number;
+  deleted: boolean;
   id: string;
   replyTo: string | null;
   reactions: string[];
+  replyAuthorName: string | null;
+  replyBody: string | null;
   room: string;
 }
 

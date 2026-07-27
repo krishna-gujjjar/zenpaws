@@ -39,7 +39,11 @@ pub enum MessageBody {
     Text(String),
     Edit { message_id: Uuid, body: String },
     Delete { message_id: Uuid },
-    Reaction { message_id: Uuid, emoji: String },
+    Reaction {
+        message_id: Uuid,
+        emoji: String,
+        removed: bool,
+    },
 }
 
 /// A hostless replicated chat message or message mutation.

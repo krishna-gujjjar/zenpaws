@@ -26,13 +26,21 @@ pub fn add_reaction(
     }
     let message_id = Uuid::parse_str(&message_id).map_err(|error| error.to_string())?;
     let peer_id = network::local_peer_id()?;
-    database
+    let added = database
         .0
         .lock()
         .map_err(|_| "database lock poisoned".to_owned())?
-        .add_reaction(message_id, peer_id, &emoji)
+        .toggle_reaction(message_id, peer_id, &emoji)
         .map_err(|error| error.to_string())?;
-    broadcast_mutation(peer_id, room, MessageBody::Reaction { message_id, emoji })
+    broadcast_mutation(
+        peer_id,
+        room,
+        MessageBody::Reaction {
+            message_id,
+            emoji,
+            removed: !added,
+        },
+    )
 }
 
 /// Publishes ephemeral typing state for the active local peer.
