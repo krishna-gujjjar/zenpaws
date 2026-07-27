@@ -34,8 +34,8 @@ impl Database {
         self.connection.execute(
             "INSERT INTO messages (
                 id, room, author_uuid, body, reply_to, lamport_peer,
-                lamport_counter, created_at
-             ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
+                lamport_counter, created_at, state_lamport_peer, state_lamport_counter
+             ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?6, ?7)",
             params![
                 message.id.to_string(),
                 message.room,
@@ -164,7 +164,7 @@ impl Database {
     }
 }
 
-fn row_to_message(row: &rusqlite::Row<'_>) -> rusqlite::Result<MessageRecord> {
+pub fn row_to_message(row: &rusqlite::Row<'_>) -> rusqlite::Result<MessageRecord> {
     let parse_uuid = |index| {
         row.get::<_, String>(index).and_then(|value| {
             Uuid::parse_str(&value).map_err(|error| {

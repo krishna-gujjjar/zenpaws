@@ -58,3 +58,13 @@ needed for debugging, but not shown in the primary thread.
 Full-text search is local-only (SQLite FTS5 against the local replica of
 message history) - it is never a network operation. See
 `09_DATABASE_SCHEMA.md`.
+## Phase 5 implementation status
+
+`MessagePayload` and `MessageBody` are now implemented in
+`zenpaws-network/src/protocol.rs`. A locally persisted text message is wrapped
+in `Envelope::Message`, queued to all connected peer write channels, and a
+receiving peer sends an `Ack::Delivered` after accepting the frame. The Tauri
+application persists received text messages through the shared event bus.
+
+Edit, delete, reaction, and read-ack envelopes remain the next network
+mutation step; their local database commands already exist.

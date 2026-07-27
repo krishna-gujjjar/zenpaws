@@ -10,13 +10,15 @@ use zenpaws_shared::PeerId;
 
 mod acks;
 mod messages;
+mod replication;
 mod trust;
 
 pub use acks::{MessageAckError, MessageAckKind, MessageStatus};
 pub use messages::{MessageCursor, MessageRecord};
+pub use replication::LamportCursor;
 pub use trust::DatabaseTrustStore;
 
-const MIGRATIONS: [(&str, &str); 3] = [
+const MIGRATIONS: [(&str, &str); 4] = [
     ("0001_init", include_str!("../migrations/0001_init.sql")),
     (
         "0002_messages_fts",
@@ -25,6 +27,10 @@ const MIGRATIONS: [(&str, &str); 3] = [
     (
         "0003_peer_certificates",
         include_str!("../migrations/0003_peer_certificates.sql"),
+    ),
+    (
+        "0004_message_lww",
+        include_str!("../migrations/0004_message_lww.sql"),
     ),
 ];
 

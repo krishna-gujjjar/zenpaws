@@ -53,3 +53,10 @@ Not a general-purpose message queue with persistence or replay - it's an
 in-process pub/sub for decoupling modules within one running app instance.
 Cross-peer messaging is the LAN protocol (`07_MESSAGE_PROTOCOL.md`), a
 separate concern entirely.
+## Phase 5 message bridge
+
+The network session publishes `MessageReceived` after decoding a text
+`Envelope::Message`. The Tauri application consumes that event to persist the
+remote message in the local replica and re-emits it to the frontend through
+`zenpaws://event`. This keeps network framing, persistence, and UI transport
+separate while preserving the local-first flow.

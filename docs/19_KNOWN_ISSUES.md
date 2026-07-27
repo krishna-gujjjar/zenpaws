@@ -1,12 +1,15 @@
 # 19 - Known Issues
 
-## Root Tauri package verification in this sandbox
+## Root Tauri package verification
 
-The networking, shared, settings, and database crates pass their tests and Clippy with
-warnings denied. Full root-package Tauri compilation is blocked in this Linux
-sandbox because the system development package providing `gdk-3.0.pc` is not
-installed. Verify the Tauri commands on a host with the Linux Tauri WebKit and
-GTK prerequisites.
+Resolved in the current verification environment. The required Debian GTK 3,
+WebKitGTK 4.1, AppIndicator, librsvg, and related Tauri development packages
+were installed. Root Tauri compilation, workspace Clippy, formatting, and
+workspace tests now pass.
+
+A fresh Linux machine still needs the platform prerequisites before running the
+same checks. The exact toolchain and verification commands are documented in
+`05_TECHNICAL_DECISIONS.md` and `22_CONTRIBUTING_GUIDE.md`.
 
 ## Capability validation pending
 

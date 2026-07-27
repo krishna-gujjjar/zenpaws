@@ -25,3 +25,9 @@ expose their first real commands.)_
 
 _(Tauri events emitted from backend to frontend - e.g. `peer:connected`,
 `message:received` - documented here once Phase 2/5 introduce them.)_
+### mark_message_read
+- **Window scope**: main-window
+- **Payload**: `{ messageId: string; peerId: string }`
+- **Returns**: `void`
+- **Errors**: invalid UUID, database lock, shared-room read receipt
+- **Added in**: Phase 5

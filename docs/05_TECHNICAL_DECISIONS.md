@@ -16,7 +16,7 @@ later without re-checking.
 | State | Zustand v5 | Already specified; minimal boilerplate, no `any` needed for typed stores. |
 | Server-state cache | TanStack Query v5 | Already specified; used for data that's conceptually "fetched" from the Rust backend via Tauri commands, even though it's local IPC not HTTP. |
 | Virtualization | `@tanstack/react-virtual` | Same ecosystem as TanStack Query, avoids a second virtualization dependency for the 100k-message list requirement. |
-| Linting/formatting | **Biome** (`@biomejs/biome`, schema `2.5.4`+) | One Rust binary replacing ESLint + Prettier; ~35x faster formatting, single config file (`biome.json`). `linter.rules.suspicious.noExplicitAny` is set to `error` to enforce the no-`any` rule mechanically, not just by convention. |
+| Linting/formatting | **Ultracite with Oxlint + Oxfmt** | Oxc's Rust-powered Oxlint and Oxfmt provide the fast lint/format path. React-specific diagnostics are supplied through `oxlint-plugin-react-doctor` in the Ultracite Oxlint JS-plugin preset. |
 | Type checking | TypeScript, `strict: true` | `noImplicitAny`, `strictNullChecks`, etc. all on - see `tsconfig.json`. |
 
 ## Backend (Rust)
@@ -75,3 +75,73 @@ violate the ladder's first rung ("does this need to exist at all").
 | Image auto-transfer threshold | 25 MB per image before it requires manual download like other files |
 | Pet state broadcast rate | 2/sec/pet (already specified in the brief) |
 | SHA-256 used for | File-transfer integrity, content-addressed storage keys |
+## Development toolchain and verification environment
+
+The repository pins the local development toolchain in `.mise.toml` so the
+frontend and Rust checks use reproducible versions:
+
+| Tool | Pinned version | Purpose |
+|---|---|---|
+| mise | 2026.7.12 or newer | Installs and activates project tools |
+| Bun | 1.3.14 | Package installation, scripts, Ultracite, and TypeScript checks |
+| Rust | 1.97.1 | Cargo, rustfmt, Clippy, and Rust tests |
+
+The JavaScript lockfile is `bun.lock`. Contributors use
+`bun install --frozen-lockfile`, not npm or another package-manager lockfile.
+On Debian-based Linux systems, the Tauri checks also require GTK 3,
+WebKitGTK 4.1, AppIndicator, librsvg, and the other packages listed in the
+Tauri Linux prerequisites.
+
+The verification sequence is intentionally explicit:
+
+```bash
+mise install
+bun install --frozen-lockfile
+bun run verify
+cd src-tauri
+cargo fmt --check
+cargo clippy --all-targets -- -D warnings
+cargo test --workspace
+```
+
+Ultracite fixes are made with `bunx ultracite fix`; the final gate is
+`bunx ultracite check` through `bun run check`. Rust formatting is applied with
+`cargo fmt` before rerunning `cargo fmt --check`. This sequence resolved the
+initial frontend callback, accessibility, promise-handling, and formatting
+diagnostics, as well as malformed Rust command-module attributes and missing
+Tauri icon inputs discovered during workspace compilation.
+
+## React-specific static analysis
+
+`oxlint-plugin-react-doctor` is an explicit development dependency used through
+Ultracite's Oxlint provider. The current Oxlint integration and rules reference
+were checked at <https://www.react.doctor/docs/configuration/eslint-and-oxlint-plugins>
+and <https://www.react.doctor/docs/rules>. React Doctor diagnostics remain
+mandatory for React, accessibility, hooks, motion, and component architecture,
+but there is no separate React Doctor CLI or direct script.
+
+A React Doctor rule found that the existing Motion usage lacked reduced-motion
+handling. The setup and status screens now use `useReducedMotion()`, and the
+stylesheet includes a `prefers-reduced-motion: reduce` fallback. The React
+Doctor Oxlint plugin now reports no issues through `bun run check`.
+
+## Oxc provider and installation cost
+
+The frontend provider is now Ultracite with Oxlint + Oxfmt. Biome and the
+standalone React Doctor CLI are intentionally not installed or invoked.
+`oxlint-plugin-react-doctor` is loaded through the Ultracite Oxlint JS-plugin
+preset so React Doctor diagnostics remain part of the same `bun run check`
+command.
+
+The project pins Node 22.18.0 in `.mise.toml` because the current Oxlint and
+Oxfmt TypeScript configuration loaders require Node 22.18.0 or newer. The
+normal workflow installs tools once with `mise install`; subsequent checks do
+not reinstall mise, Bun, Node, or Rust. The package scripts scope Ultracite to
+`src` and `vite.config.ts` so generated Rust targets, dependency trees, and
+unrelated repository artifacts are not scanned.
+
+In the constrained agent sandbox, Oxlint's experimental JS-plugin allocator
+can abort before linting because it reserves a large fixed-size allocator. The
+configuration is retained for normal development machines, where the plugin is
+required; this environment can still validate Oxfmt and Oxlint's native rules
+without the plugin when diagnosing that upstream allocator limitation.

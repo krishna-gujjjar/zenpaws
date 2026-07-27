@@ -83,6 +83,45 @@ pub enum ZenPawsEvent {
         room: String,
         is_typing: bool,
     },
+    MessageReceived {
+        message_id: Uuid,
+        room: String,
+        author: PeerId,
+        author_name: String,
+        body: String,
+        created_at: i64,
+        lamport_counter: i64,
+        reply_to: Option<Uuid>,
+    },
+    MessageEdited {
+        message_id: Uuid,
+        body: String,
+        edited_at: i64,
+        lamport_counter: i64,
+        lamport_peer: PeerId,
+    },
+    MessageDeleted {
+        message_id: Uuid,
+        deleted_at: i64,
+        lamport_counter: i64,
+        lamport_peer: PeerId,
+    },
+    MessageReactionAdded {
+        message_id: Uuid,
+        peer_id: PeerId,
+        emoji: String,
+    },
+    MessageAckReceived {
+        message_id: Uuid,
+        peer_id: PeerId,
+        read: bool,
+    },
+    SyncRequested {
+        peer_id: PeerId,
+        room: String,
+        since_counter: i64,
+        since_peer: PeerId,
+    },
 }
 
 /// In-process fanout for decoupled backend modules.

@@ -1,26 +1,31 @@
+mod connection;
+mod error;
+mod lifecycle;
+
+pub use connection::PeerConnection;
+pub use error::ServiceError;
+
 use std::{
-    collections::HashSet,
+    collections::{HashMap, HashSet},
     net::SocketAddr,
     sync::{Arc, Mutex},
-    time::{Duration, Instant},
+    time::Duration,
 };
 
 use rustls::pki_types::{CertificateDer, ServerName};
-use thiserror::Error;
-use tokio::net::{TcpListener, TcpStream};
-use tokio_rustls::TlsStream;
-use zenpaws_shared::{EventBus, PeerId, PeerTrustStore, TrustStoreError, ZenPawsEvent};
+use tokio::{net::TcpListener, sync::mpsc};
+use zenpaws_shared::{EventBus, PeerId, PeerTrustStore};
 
 use crate::{
-    ConnectionStateMachine, Envelope, FrameError, HandshakeError, HandshakeIdentity, MdnsDiscovery,
-    TlsError, TlsIdentity, TransportError, UDP_DISCOVERY_PORT, UdpAdvertisement, UdpDiscovery,
-    accept_tls, client_handshake, connect_tls, read_envelope, server_handshake, write_envelope,
+    ConnectionStateMachine, Envelope, HandshakeIdentity, MdnsDiscovery, TlsIdentity,
+    UDP_DISCOVERY_PORT, UdpAdvertisement, UdpDiscovery, accept_tls, client_handshake, connect_tls,
+    server_handshake,
 };
 
 /// Listener, mDNS advertisement, and inbound encrypted peer lifecycle.
 pub struct NetworkService {
     connecting_peers: Mutex<HashSet<PeerId>>,
-    discovery: MdnsDiscovery,
+    discovery: Option<MdnsDiscovery>,
     udp: UdpDiscovery,
     udp_advertisement: UdpAdvertisement,
     heartbeat_timeout: Duration,
@@ -28,6 +33,7 @@ pub struct NetworkService {
     listener: TcpListener,
     server_config: Arc<rustls::ServerConfig>,
     bus: EventBus,
+    peers: Mutex<HashMap<PeerId, mpsc::Sender<Envelope>>>,
 }
 
 impl NetworkService {
@@ -47,10 +53,14 @@ impl NetworkService {
     ) -> Result<Self, ServiceError> {
         let local = HandshakeIdentity::new(peer_id, username)?;
         let listener = TcpListener::bind(bind_address).await?;
-        let discovery = MdnsDiscovery::start()?;
         let tcp_port = listener.local_addr()?.port();
         let certificate = identity.certificate();
-        discovery.advertise(peer_id, local.username(), tcp_port, certificate.as_ref())?;
+        let discovery = MdnsDiscovery::start().ok().and_then(|discovery| {
+            discovery
+                .advertise(peer_id, local.username(), tcp_port, certificate.as_ref())
+                .ok()
+                .map(|()| discovery)
+        });
         let udp = UdpDiscovery::bind(
             SocketAddr::from(([0, 0, 0, 0], UDP_DISCOVERY_PORT)),
             SocketAddr::from(([255, 255, 255, 255], UDP_DISCOVERY_PORT)),
@@ -72,6 +82,7 @@ impl NetworkService {
             listener,
             server_config: identity.server_config()?,
             bus,
+            peers: Mutex::new(HashMap::new()),
         })
     }
 
@@ -88,6 +99,40 @@ impl NetworkService {
     /// Returns an error when the listener no longer has a local address.
     pub fn local_addr(&self) -> Result<SocketAddr, ServiceError> {
         Ok(self.listener.local_addr()?)
+    }
+
+    /// Queues one envelope for every currently connected peer.
+    pub fn broadcast(&self, envelope: &Envelope) {
+        if let Ok(mut peers) = self.peers.lock() {
+            peers.retain(|_, sender| sender.try_send(envelope.clone()).is_ok());
+        }
+    }
+
+    /// Queues one envelope for a specific connected peer.
+    pub fn send_to(&self, peer_id: PeerId, envelope: &Envelope) -> Result<(), ServiceError> {
+        let peers = self
+            .peers
+            .lock()
+            .map_err(|_| ServiceError::PeerRegistryPoisoned)?;
+        let sender = peers.get(&peer_id).ok_or(ServiceError::PeerNotConnected)?;
+        sender
+            .try_send(envelope.clone())
+            .map_err(|_| ServiceError::PeerChannelClosed)
+    }
+
+    fn register_connection(&self, connection: PeerConnection) {
+        let peer_id = connection.peer_id();
+        let sender = connection.start();
+        let _ = sender.try_send(Envelope::SyncRequest {
+            room: "shared".to_owned(),
+            since: crate::LamportClock {
+                counter: 0,
+                peer_id: self.local.peer_id(),
+            },
+        });
+        if let Ok(mut peers) = self.peers.lock() {
+            peers.insert(peer_id, sender);
+        }
     }
 
     /// Accepts TLS and completes the server half of the application handshake.
@@ -141,234 +186,6 @@ impl NetworkService {
             stream,
         })
     }
-
-    /// Runs the inbound accept loop with bounded recovery after listener errors.
-    pub async fn run_inbound(self: Arc<Self>, mut shutdown: tokio::sync::watch::Receiver<bool>) {
-        let mut retry =
-            crate::RetryBackoff::new(Duration::from_millis(250), Duration::from_secs(5));
-        loop {
-            tokio::select! {
-                changed = shutdown.changed() => {
-                    if changed.is_err() || *shutdown.borrow() {
-                        break;
-                    }
-                }
-                result = self.accept_peer() => match result {
-                    Ok(connection) => {
-                        retry.reset();
-                        tokio::spawn(async move { connection.monitor().await });
-                    }
-                    Err(_) => tokio::time::sleep(retry.next_delay()).await,
-                },
-            }
-        }
-    }
-
-    /// Connects to one resolved mDNS peer through the full TOFU lifecycle.
-    ///
-    /// # Errors
-    ///
-    /// Returns an error for self-discovery, invalid TLS naming, trust failure,
-    /// transport failure, or application-handshake failure.
-    pub async fn connect_discovered_peer<S>(
-        &self,
-        peer: crate::DiscoveredPeer,
-        trust_store: &S,
-    ) -> Result<PeerConnection, ServiceError>
-    where
-        S: PeerTrustStore + ?Sized,
-    {
-        if peer.peer_id == self.local.peer_id() {
-            return Err(ServiceError::SelfConnection);
-        }
-        let name = ServerName::try_from(format!("zenpaws-{}.local", peer.peer_id.as_uuid()))
-            .map_err(|_| ServiceError::InvalidServerName)?
-            .to_owned();
-        self.connect_peer(
-            peer.endpoint,
-            name,
-            peer.peer_id,
-            CertificateDer::from(peer.certificate_der),
-            trust_store,
-        )
-        .await
-    }
-
-    /// Reacts to resolved mDNS peers without polling or port scanning.
-    pub async fn run_discovery(
-        self: Arc<Self>,
-        trust_store: Arc<dyn PeerTrustStore>,
-        mut shutdown: tokio::sync::watch::Receiver<bool>,
-    ) {
-        loop {
-            let peer = tokio::select! {
-                changed = shutdown.changed() => {
-                    if changed.is_err() || *shutdown.borrow() {
-                        break;
-                    }
-                    continue;
-                }
-                result = self.discovery.next_peer() => match result {
-                    Ok(peer) => peer,
-                    Err(_) => break,
-                },
-            };
-            if peer.peer_id == self.local.peer_id() || !self.mark_connecting(peer.peer_id) {
-                continue;
-            }
-            let service = Arc::clone(&self);
-            let trust_store = Arc::clone(&trust_store);
-            tokio::spawn(async move { service.connect_with_retry(peer, trust_store).await });
-        }
-    }
-
-    /// Announces and receives the UDP discovery fallback at a low fixed rate.
-    pub async fn run_udp(
-        self: Arc<Self>,
-        trust_store: Arc<dyn PeerTrustStore>,
-        mut shutdown: tokio::sync::watch::Receiver<bool>,
-    ) {
-        loop {
-            let _ = self.udp.announce(&self.udp_advertisement).await;
-            let peer = tokio::select! {
-                changed = shutdown.changed() => {
-                    if changed.is_err() || *shutdown.borrow() {
-                        break;
-                    }
-                    continue;
-                }
-                received = self.udp.receive() => match received {
-                    Ok((advertisement, source)) => crate::DiscoveredPeer {
-                        certificate_der: advertisement.certificate_der,
-                        endpoint: SocketAddr::new(source.ip(), advertisement.tcp_port),
-                        peer_id: advertisement.peer_id,
-                        username: advertisement.username,
-                    },
-                    Err(_) => continue,
-                },
-                () = tokio::time::sleep(Duration::from_secs(30)) => continue,
-            };
-            if peer.peer_id == self.local.peer_id() || !self.mark_connecting(peer.peer_id) {
-                continue;
-            }
-            let service = Arc::clone(&self);
-            let trust_store = Arc::clone(&trust_store);
-            tokio::spawn(async move { service.connect_with_retry(peer, trust_store).await });
-        }
-    }
-
-    async fn connect_with_retry(
-        self: Arc<Self>,
-
-        peer: crate::DiscoveredPeer,
-        trust_store: Arc<dyn PeerTrustStore>,
-    ) {
-        let mut retry =
-            crate::RetryBackoff::new(Duration::from_millis(250), Duration::from_secs(5));
-        loop {
-            match self
-                .connect_discovered_peer(peer.clone(), trust_store.as_ref())
-                .await
-            {
-                Ok(connection) => {
-                    connection.monitor().await;
-                    break;
-                }
-                Err(ServiceError::Tls(TlsError::Trust(TrustStoreError::PinMismatch))) => {
-                    self.bus.publish(ZenPawsEvent::PeerTrustViolation {
-                        peer_id: peer.peer_id,
-                    });
-                    break;
-                }
-                Err(_) => tokio::time::sleep(retry.next_delay()).await,
-            }
-        }
-        self.clear_connecting(peer.peer_id);
-    }
-
-    fn mark_connecting(&self, peer_id: PeerId) -> bool {
-        self.connecting_peers
-            .lock()
-            .is_ok_and(|mut peers| peers.insert(peer_id))
-    }
-
-    fn clear_connecting(&self, peer_id: PeerId) {
-        if let Ok(mut peers) = self.connecting_peers.lock() {
-            peers.remove(&peer_id);
-        }
-    }
-
-    /// Stops mDNS activity before the application exits.
-    ///
-    /// # Errors
-    ///
-    /// Returns an error when the mDNS daemon cannot shut down cleanly.
-    pub fn shutdown(&self) -> Result<(), ServiceError> {
-        self.discovery.shutdown()?;
-        Ok(())
-    }
-}
-
-/// One accepted, TLS-protected peer connection.
-pub struct PeerConnection {
-    address: SocketAddr,
-    heartbeat_timeout: Duration,
-    remote: HandshakeIdentity,
-    state: ConnectionStateMachine,
-    stream: TlsStream<TcpStream>,
-}
-
-impl PeerConnection {
-    /// Returns the remote TCP endpoint.
-    #[must_use]
-    pub const fn address(&self) -> SocketAddr {
-        self.address
-    }
-
-    /// Returns the identity validated by the application handshake.
-    #[must_use]
-    pub const fn peer_id(&self) -> PeerId {
-        self.remote.peer_id()
-    }
-
-    /// Sends a heartbeat without allocating a polling task.
-    ///
-    /// # Errors
-    ///
-    /// Returns an error when encrypted framing fails.
-    pub async fn send_heartbeat(&mut self) -> Result<(), ServiceError> {
-        write_envelope(&mut self.stream, &Envelope::Heartbeat).await?;
-        Ok(())
-    }
-
-    /// Receives one control envelope and refreshes heartbeat state when needed.
-    ///
-    /// # Errors
-    ///
-    /// Returns an error when encrypted framing fails or the peer state is invalid.
-    pub async fn receive(&mut self) -> Result<Envelope, ServiceError> {
-        let envelope = read_envelope(&mut self.stream).await?;
-        if matches!(envelope, Envelope::Heartbeat) {
-            self.state.heartbeat(self.heartbeat_timeout)?;
-        }
-        Ok(envelope)
-    }
-
-    /// Monitors inbound control frames until the peer disconnects or a frame fails.
-    async fn monitor(mut self) {
-        while self.receive().await.is_ok() {}
-        let _ = self.state.disconnected();
-    }
-
-    /// Applies the configured heartbeat deadline.
-    ///
-    /// # Errors
-    ///
-    /// Returns an error when the connection state cannot transition.
-    pub fn check_heartbeat(&mut self, now: Instant) -> Result<(), ServiceError> {
-        self.state.check_heartbeat(now)?;
-        Ok(())
-    }
 }
 
 #[cfg(test)]
@@ -380,29 +197,4 @@ mod tests {
         fn assert_send_sync<T: Send + Sync>() {}
         assert_send_sync::<NetworkService>();
     }
-}
-
-/// Network-service lifecycle failures.
-#[derive(Debug, Error)]
-pub enum ServiceError {
-    #[error("TCP listener failed")]
-    Io(#[from] std::io::Error),
-    #[error("mDNS lifecycle failed")]
-    Discovery(#[from] crate::DiscoveryError),
-    #[error("UDP fallback discovery failed")]
-    Udp(#[from] crate::UdpError),
-    #[error("TLS configuration or handshake failed")]
-    Tls(#[from] TlsError),
-    #[error("TLS transport failed")]
-    Transport(#[from] TransportError),
-    #[error("application handshake failed")]
-    Handshake(#[from] HandshakeError),
-    #[error("peer protocol framing failed")]
-    Frame(#[from] FrameError),
-    #[error("peer state update failed")]
-    State(#[from] crate::StateError),
-    #[error("discovered peer attempted to connect to itself")]
-    SelfConnection,
-    #[error("discovered peer TLS server name was invalid")]
-    InvalidServerName,
 }

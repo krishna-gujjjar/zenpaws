@@ -1,55 +1,100 @@
-import { motion } from "motion/react";
-import type { ReactNode } from "react";
+import { invoke } from "@tauri-apps/api/core";
+import { motion, useReducedMotion } from "motion/react";
+import { useCallback, useEffect, useState } from 'react';
+import type { ReactNode } from 'react';
+
 import { ChatShell } from "../features/chat/chat-shell";
 import { useAppStatus } from "../hooks/use-app-status";
+import { SetupScreen } from "./setup-screen";
 
-/**
- * The visible Phase 1 shell: confirms the Rust backend is reachable over
- * IPC. Replaced by real chat/pet UI starting Phase 2+ - this file's only
- * job right now is to prove the wiring works, using the same stack
- * (Motion, TanStack Query) the real UI will use, so Phase 2 isn't the first
- * time any of it runs.
- */
+type NetworkState = "ready" | "setup" | "starting";
+
 export function AppShell(): ReactNode {
   const { data, isLoading, isError } = useAppStatus();
+  const reduceMotion = useReducedMotion();
+  const storedUsername = window.localStorage.getItem("zenpaws.username");
+  const storedPeerId = window.localStorage.getItem("zenpaws.peerId");
+  const [networkState, setNetworkState] = useState<NetworkState>(() =>
+    storedUsername && storedPeerId ? "starting" : "setup"
+  );
+  const markReady = useCallback(() => setNetworkState("ready"), []);
 
-  if (!(isLoading || isError)) {
-    return <ChatShell />;
+  useEffect(() => {
+    if (networkState !== "starting" || !storedUsername) {
+      return;
+    }
+    let active = true;
+    invoke("start_network", { username: storedUsername })
+      .then(() => {
+        if (active) {
+          setNetworkState("ready");
+        }
+      })
+      .catch(() => {
+        if (active) {
+          setNetworkState("setup");
+        }
+      });
+    return () => {
+      active = false;
+    };
+  }, [networkState, storedUsername]);
+
+  if (isLoading || isError || networkState === "starting") {
+    return (
+      <StatusScreen
+        isError={isError}
+        isLoading={isLoading || networkState === "starting"}
+        reduceMotion={reduceMotion}
+        version={data?.version}
+      />
+    );
   }
+  if (networkState === "setup") {
+    return <SetupScreen onReady={markReady} />;
+  }
+  return <ChatShell />;
+}
 
+interface StatusScreenProps {
+  isError: boolean;
+  isLoading: boolean;
+  reduceMotion: boolean | null;
+  version: string | undefined;
+}
+
+function StatusScreen({
+  isError,
+  isLoading,
+  reduceMotion,
+  version,
+}: StatusScreenProps) {
   return (
     <motion.main
-      animate={{ opacity: 1 }}
-      initial={{ opacity: 0 }}
-      style={styles.main}
-      transition={{ duration: 0.3 }}
+      animate={reduceMotion ? false : { opacity: 1 }}
+      className="status-page"
+      initial={reduceMotion ? false : { opacity: 0 }}
+      transition={reduceMotion ? { duration: 0 } : { duration: 0.3 }}
     >
-      <h1 style={styles.heading}>ZenPaws</h1>
-      <p style={styles.status}>{renderStatus(isLoading, isError, data?.version)}</p>
+      <div aria-hidden="true" className="brand-mark">
+        🐾
+      </div>
+      <h1>ZenPaws</h1>
+      <p>{renderStatus(isLoading, isError, version)}</p>
     </motion.main>
   );
 }
 
-function renderStatus(isLoading: boolean, isError: boolean, version: string | undefined): string {
+function renderStatus(
+  isLoading: boolean,
+  isError: boolean,
+  version: string | undefined
+): string {
   if (isLoading) {
-    return "Connecting to backend...";
+    return "Connecting to the local service...";
   }
   if (isError) {
-    return "Backend unreachable - check the Rust process.";
+    return "The backend is unavailable. Check the Rust process and try again.";
   }
   return `Backend connected - v${version ?? "unknown"}`;
 }
-
-const styles = {
-  heading: { fontSize: "2rem", margin: 0 },
-  main: {
-    alignItems: "center",
-    display: "flex",
-    flexDirection: "column" as const,
-    fontFamily: "system-ui, sans-serif",
-    gap: "0.5rem",
-    height: "100vh",
-    justifyContent: "center",
-  },
-  status: { color: "#666", margin: 0 },
-};

@@ -1,8 +1,10 @@
-import { type InfiniteData, useInfiniteQuery, useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
+import type { InfiniteData } from '@tanstack/react-query';
 import { invoke } from "@tauri-apps/api/core";
 
 export interface ChatMessage {
   authorId: string;
+  authorName: string;
   body: string;
   createdAt: number;
   id: string;
@@ -61,12 +63,15 @@ export function useInfiniteMessages(room: string) {
 export function useMessageSearch(query: string) {
   return useQuery({
     enabled: query.trim().length > 0,
-    queryFn: () => invoke<ChatMessage[]>("search_messages", { limit: 50, query }),
+    queryFn: () =>
+      invoke<ChatMessage[]>("search_messages", { limit: 50, query }),
     queryKey: ["message-search", query],
     staleTime: Number.POSITIVE_INFINITY,
   });
 }
 
-export async function listMessages(args: ListMessagesArgs): Promise<ChatMessage[]> {
+export async function listMessages(
+  args: ListMessagesArgs
+): Promise<ChatMessage[]> {
   return await invoke<ChatMessage[]>("list_messages", args);
 }

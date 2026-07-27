@@ -5,14 +5,16 @@
 
 use std::{
     net::SocketAddr,
-    sync::{Arc, OnceLock},
+    sync::{Arc, Mutex, OnceLock},
     time::Duration,
 };
 
 use serde::Serialize;
 use tauri::{AppHandle, Manager, State};
-use zenpaws_database::DatabaseTrustStore;
-use zenpaws_network::{NetworkService, TlsIdentity};
+use zenpaws_database::{DatabaseTrustStore, LamportCursor};
+use zenpaws_network::{
+    Envelope, LamportClock, MessageBody, MessagePayload, NetworkService, TlsIdentity,
+};
 use zenpaws_settings::{LocalIdentity, load_local_identity, save_local_identity};
 use zenpaws_shared::{EventBus, PeerId, PeerTrustStore};
 
@@ -113,6 +115,52 @@ pub(super) fn local_peer_id() -> Result<PeerId, String> {
         .get()
         .map(|runtime| runtime.service.local_peer_id())
         .ok_or_else(|| "network service is not running".to_owned())
+}
+
+pub(super) fn broadcast(envelope: Envelope) -> Result<(), String> {
+    let runtime = NETWORK_RUNTIME
+        .get()
+        .ok_or_else(|| "network service is not running".to_owned())?;
+    runtime.service.broadcast(&envelope);
+    Ok(())
+}
+
+pub(crate) fn handle_sync_request(
+    database: &Arc<Mutex<zenpaws_database::Database>>,
+    peer_id: PeerId,
+    room: String,
+    since: LamportCursor,
+) -> Result<(), String> {
+    let messages = database
+        .lock()
+        .map_err(|_| "database lock poisoned".to_owned())?
+        .messages_after_lamport(&room, since, 200)
+        .map_err(|error| error.to_string())?;
+    let runtime = NETWORK_RUNTIME
+        .get()
+        .ok_or_else(|| "network service is not running".to_owned())?;
+    for message in messages {
+        runtime
+            .service
+            .send_to(
+                peer_id,
+                &Envelope::Message(MessagePayload {
+                    author: message.author,
+                    body: MessageBody::Text(message.body),
+                    clock: LamportClock {
+                        counter: message.lamport_counter,
+                        peer_id: message.lamport_peer,
+                    },
+                    created_at: message.created_at,
+                    id: message.id,
+                    mentions: Vec::new(),
+                    reply_to: message.reply_to,
+                    room: message.room,
+                }),
+            )
+            .map_err(|error| error.to_string())?;
+    }
+    Ok(())
 }
 
 fn status_for(service: &NetworkService) -> Result<NetworkStatus, String> {

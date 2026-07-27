@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { type ReactNode, useState } from "react";
+import { useState } from 'react';
+import type { ReactNode } from 'react';
 
 interface AppProvidersProps {
   children: ReactNode;
@@ -22,8 +23,10 @@ export function AppProviders({ children }: AppProvidersProps): ReactNode {
             retry: 1,
           },
         },
-      }),
+      })
   );
 
-  return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
+  return (
+    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+  );
 }

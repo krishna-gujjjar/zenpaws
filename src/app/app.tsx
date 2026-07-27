@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
-import { AppProviders } from "./app.provider";
+
 import { AppShell } from "./app-shell";
+import { AppProviders } from "./app.provider";
 
 /**
  * Root component. Deliberately minimal at Phase 1 - a real layout, routing

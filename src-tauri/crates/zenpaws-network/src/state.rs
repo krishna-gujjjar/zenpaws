@@ -24,6 +24,11 @@ impl ConnectionStateMachine {
         }
     }
 
+    /// Publishes a cross-module event from this peer session.
+    pub fn publish(&self, event: ZenPawsEvent) {
+        self.bus.publish(event);
+    }
+
     /// Returns the current peer state.
     #[must_use]
     pub const fn state(&self) -> ConnectionState {

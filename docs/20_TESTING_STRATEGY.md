@@ -16,7 +16,7 @@ process rules - later phases build to this, not around it.
 
 ## CI gates (from Phase 1 onward)
 
-Every commit: `biome check .`, `cargo clippy --all-targets -- -D warnings`,
+Every commit: `bun run check` (Ultracite with Oxlint, Oxfmt, and the React Doctor Oxlint plugin), `cargo clippy --all-targets -- -D warnings`,
 `cargo fmt --check`, `tsc -b --noEmit`, `cargo nextest run`, `vitest run`.
 A phase is not done if any of these fail.
 
@@ -55,3 +55,78 @@ there's a real build to test - not simulated abstractly here.
 
 - Pet tests cover local state deduplication, rate limiting, and local-only versus synchronized state mapping.
 - Desktop-host testing must verify transparent and click-through pet overlays on Windows, Linux, and macOS.
+## Verification completed after environment restoration
+
+The documented gates were executed after installing the pinned mise, Bun, and
+Rust toolchains and the Linux Tauri development libraries:
+
+```bash
+bun run verify
+cd src-tauri
+cargo fmt --check
+cargo clippy --all-targets -- -D warnings
+cargo test --workspace
+```
+
+All four commands passed. The remediation included handling the Ultracite
+callback, promise, accessibility, and formatting diagnostics; correcting the
+malformed Rust command-module attributes; and restoring the RGBA Tauri icons
+needed for root-crate compilation. These checks should be rerun after every
+phase change, not only before a release.
+
+## React Doctor through Oxlint
+
+React Doctor is integrated through `oxlint-plugin-react-doctor` in
+`oxlint.config.ts`. It is intentionally not installed or run as a separate
+CLI. The single command below covers Oxfmt, Oxlint, and the React Doctor plugin:
+
+```bash
+bun run check
+```
+
+The gate must report no issues. In particular, every Motion animation must
+respect reduced-motion preferences through `useReducedMotion()` or an
+appropriate CSS fallback.
+
+## Single-computer Phase 5 testing
+
+A single running ZenPaws window can verify the local-first chat surface:
+
+```bash
+mise install
+bun install --frozen-lockfile
+bun run tauri dev
+```
+
+Enter a username, then verify sending, editing, deleting, replying, reactions,
+copying, the right-click context menu, @mention rendering, local FTS search,
+and DM read-receipt dispatch where a DM room is available. Restart the app to
+verify local message persistence.
+
+Cross-peer delivery cannot be validated by one window yet. The current Phase 5
+wire work defines and tests the `MessagePayload` envelope, but the live network
+broadcast/receive registry is still pending. Once that is implemented, a
+single computer can use two isolated app-data profiles and separate listeners,
+or the LAN checklist can use a second machine.
+
+## Phase 5 mutation coverage
+
+The database integration test now applies an edit, reaction, delivered receipt,
+read receipt, and delete to one replica and verifies both receipt flags. The
+network suite covers message and acknowledgement envelope round trips.
+A two-peer loopback service test remains needed to verify the complete transport
+path rather than only its protocol and replica layers.
+
+## Loopback peer transport coverage
+
+The network crate now includes a loopback TLS peer test that creates a server
+and client session, completes both application handshakes, starts the peer
+outbound channel, and verifies a message envelope arrives on the other side.
+This validates the live framed transport path without mDNS or a second device.
+
+## Lamport and reconnect coverage
+
+Database coverage now includes idempotent replicated inserts, Lamport-cursor
+message queries, and a regression test proving an older remote edit cannot
+replace a newer visible edit. The sync request envelope and cursor query are
+ready for the reconnect response implementation.

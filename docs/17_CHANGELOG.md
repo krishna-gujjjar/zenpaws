@@ -26,8 +26,9 @@
   README, and contributor instructions.
 - Kept dependencies honest: removed unused opener and lint-wrapper packages,
   and removed future-phase Rust dependencies from the Phase 1 build graph.
-- Added Vite Tauri development configuration, strict TypeScript, Biome,
-  application shell, TanStack Query provider, and a thin Rust IPC smoke test.
+- Added Vite Tauri development configuration, strict TypeScript, the frontend
+  lint/format pipeline, application shell, TanStack Query provider, and a thin
+  Rust IPC smoke test.
 - Added single-instance and window-state plugins, initial per-window
   capability files, production/development CSPs, and native icon assets.
 - Created the project git repository and committed this phase as one atomic
@@ -41,3 +42,93 @@
 
 - Added the project constitution and architecture/specification documents
   (`docs/00` through `docs/27`).
+## Verification environment and lint remediation
+
+- Added `.mise.toml` pinning Bun 1.3.14 and Rust 1.97.1, installed mise, and generated the canonical `bun.lock` with Bun.
+- Fixed Ultracite diagnostics in the chat UI by stabilizing JSX callbacks, handling asynchronous promises without `void`, correcting ARIA semantics, simplifying nested conditionals, and applying formatter output.
+- Fixed malformed Rust command-module attributes and applied `cargo fmt` formatting.
+- Added valid RGBA Tauri icon inputs required by `tauri::generate_context!`.
+- Installed the Debian GTK/WebKitGTK/AppIndicator development dependencies that were preventing root Tauri compilation.
+- Verified `bun run verify`, `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, and `cargo test --workspace` successfully.
+
+## React Doctor and file-size compliance
+
+- Added `oxlint-plugin-react-doctor` to the Ultracite Oxlint JS-plugin configuration and made its diagnostics part of `bun run check`.
+- Documented the React Doctor Oxlint integration in `15_AI_AGENT_RULES.md` and its dependency decision in `05_TECHNICAL_DECISIONS.md`.
+- Added reduced-motion handling with `useReducedMotion()` and a CSS media-query fallback after the React Doctor plugin identified the missing accessibility behavior.
+- Split the chat command types and network service connection, lifecycle, and error modules so project-owned code files remain under 200 lines.
+- Re-ran Ultracite, TypeScript, React Doctor, rustfmt, Clippy, and the full Cargo workspace tests successfully.
+
+## LAN startup fallback
+
+- Fixed `start_network` failures on hosts where mDNS cannot initialize or advertise. The network service now falls back to bounded UDP discovery instead of refusing to start.
+- Setup errors now display the backend's actual returned message, making platform-specific startup failures diagnosable.
+
+## Frontend provider migration
+
+- Removed Biome and the standalone React Doctor CLI.
+- Switched Ultracite to Oxlint + Oxfmt and enabled `oxlint-plugin-react-doctor` through `ultracite/oxlint/js-plugins`.
+- Added Node 22.18.0 to the mise toolchain because the current Oxc TypeScript config loaders require it.
+- Scoped frontend checks to `src` and `vite.config.ts`, preventing long scans of generated Rust and dependency artifacts.
+
+## Phase 5 chat interaction continuation
+
+- Added right-click message actions for copy, reply, edit, delete, and close.
+- Added visible @mention token styling with a small pure parser utility.
+- Improved message row hierarchy, action controls, context-menu styling, and responsive message presentation.
+
+- Added local message search UI backed by the existing FTS5 query, with room navigation from search results.
+
+- Added direct-message read receipt dispatch when a DM message row is rendered; shared-room messages continue to reject read receipts.
+
+## Phase 5 message transport
+
+- Implemented text `MessagePayload` wire envelopes with Lamport metadata.
+- Added per-peer outbound channels and network broadcast for locally persisted text messages.
+- Added remote text-message event handling, local replica persistence, and delivered acknowledgements.
+
+- Extended Phase 5 network delivery to edit, delete, and reaction mutation envelopes with remote replica application.
+
+- Completed network delivered/read acknowledgement flow and applied remote edit, delete, reaction, and receipt events to local persistence.
+
+- Added database integration coverage for chat mutations and delivered/read receipt state.
+
+- Added a loopback TLS peer integration test covering handshake completion and live outbound message delivery.
+
+- Added deterministic Lamport-clock ordering coverage and the versioned `SyncRequest` protocol envelope for reconnect synchronization groundwork.
+
+## Phase 5 chat UX fixes
+
+- Corrected feed ordering so oldest messages are above newer messages.
+- Removed the persistent inline action button row; message actions now appear through right-click, hover reaction, or touch swipe.
+- Constrained the chat shell to one application viewport scroll.
+- Added touch swipe actions for reply and reaction.
+- Added Enter-to-send and Shift+Enter newline behavior.
+
+- Added message-state Lamport columns and migration-cursor queries for reconnect synchronization.
+- Added LWW guards for remote edits and deletes plus a regression test for rejecting an older edit.
+
+## Follow-up Phase 5 UX corrections
+
+- Reworked the message context menu into a viewport-positioned menu that closes on outside click, Escape, and action selection.
+- Removed touch swipe actions as requested.
+- Added local sender `You` labeling and remote peer username projections.
+- Kept hover reaction behavior and fixed message viewport scrolling and composer Enter behavior.
+
+- Added near-bottom auto-scroll for new messages while preserving scroll position during older-history pagination.
+
+- Replaced the message composer textarea with a contenteditable message input and kept Shift+Enter newline support.
+- Reply context now clears automatically after a successful send.
+
+## Tauri command split fix
+
+- Fixed generated Tauri command symbol resolution after extracting chat mutations into a submodule.
+- Corrected Lamport migration expectations and initialized message state Lamport columns on insert.
+
+- Implemented the first reconnect catch-up response path using Lamport cursors and targeted peer sends.
+
+- Fixed repeated first-launch setup display by restoring the persisted local identity and restarting the LAN service automatically on app reopen.
+
+- Added frontend `zenpaws://event` message reconciliation for incoming messages, remote mutations, and acknowledgement status updates.
+
+- Extended remote message reconciliation to cover delete and reaction events.

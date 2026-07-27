@@ -10,7 +10,9 @@ interface TypingEvent {
 }
 
 export function useTypingEvents(room: string) {
-  const [typingPeers, setTypingPeers] = useState<ReadonlySet<string>>(new Set());
+  const [typingPeers, setTypingPeers] = useState<ReadonlySet<string>>(
+    new Set()
+  );
   const expiry = useRef(new Map<string, number>());
 
   useEffect(() => {
@@ -36,7 +38,7 @@ export function useTypingEvents(room: string) {
                 updated.delete(typing.peer_id);
                 return updated;
               });
-            }, 3000),
+            }, 3000)
           );
         } else {
           const timeout = expiry.current.get(typing.peer_id);
@@ -51,7 +53,7 @@ export function useTypingEvents(room: string) {
       .then((dispose) => {
         unlisten = dispose;
       })
-      .catch(() => undefined);
+      .catch(() => {});
     return () => unlisten?.();
   }, [room]);
 

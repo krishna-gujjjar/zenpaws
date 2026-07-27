@@ -61,8 +61,8 @@ always use kebab-case for file & folder names. don't ever use "—", "…", or a
 ## Type safety
 
 - `never use any` - literally: no `any`, no `as any` escape hatches, no
-  implicit `any` from an unannotated parameter. Biome's
-  `linter.rules.suspicious.noExplicitAny` is `error`, and `tsconfig.json`
+  implicit `any` from an unannotated parameter. Oxlint's no-explicit-any rule
+  is an error, and `tsconfig.json`
   has `strict: true` plus explicit `noImplicitAny: true`.
 - When a type is genuinely unknown at a boundary (e.g. a Tauri event
   payload), use `unknown` and narrow it with a type guard or a validation
@@ -74,7 +74,7 @@ always use kebab-case for file & folder names. don't ever use "—", "…", or a
 
 ## Linters/formatters - must pass before a phase is considered done
 
-- `biome check .` (lint + format check)
+- `bun run check` (Ultracite with Oxlint + Oxfmt, including the React Doctor Oxlint plugin)
 - `cargo clippy --all-targets -- -D warnings`
 - `cargo fmt --check`
 - `tsc -b --noEmit` (typecheck)
@@ -85,3 +85,44 @@ A crate or module that legitimately has no logic yet, because its phase
 hasn't started, stays an honest, compiling stub with a doc comment pointing
 to the spec it will implement - never a fake/mocked version of the feature
 it will eventually be.
+## React Doctor through Oxlint
+
+React Doctor is enforced through Oxc's Oxlint plugin, not through a separate
+React Doctor CLI installation or command. Ultracite runs Oxlint and Oxfmt, and
+`oxlint-plugin-react-doctor` supplies the React-specific diagnostics.
+
+The project configuration is `oxlint.config.ts`. It extends:
+
+- `ultracite/oxlint/core`
+- `ultracite/oxlint/js-plugins`, filtered to the React Doctor plugin
+
+The required gate is therefore simply:
+
+```bash
+bun run check
+```
+
+Do not disable a React Doctor rule to make the check pass. Fix the underlying
+code unless a genuine false positive is documented with its rationale. The
+rules reference is maintained at <https://www.react.doctor/docs/rules> and the
+Oxlint integration is documented at
+<https://www.react.doctor/docs/configuration/eslint-and-oxlint-plugins>.
+
+The current project-relevant requirements include:
+
+- Keep components and hooks pure; do not mutate state during render.
+- Keep hook dependency arrays complete and preserve manual memoization safely.
+- Avoid unnecessary effects and derived state effects.
+- Use stable keys for rendered collections; never use array indexes when a
+  stable domain identifier exists.
+- Use semantic HTML and valid WAI-ARIA attributes and roles.
+- Give every interactive control an accessible name.
+- Do not use `dangerouslySetInnerHTML`, `javascript:` URLs, or unsafe DOM
+  mutation patterns.
+- Respect reduced-motion preferences for every non-essential animation.
+- Avoid excessive z-index values, render-blocking patterns, and avoidable
+  re-renders.
+
+When Oxlint reports a React Doctor rule, read its rule-specific recommendation
+before editing. Ultracite's single `bun run check` gate now covers formatting,
+core linting, and React Doctor diagnostics together.

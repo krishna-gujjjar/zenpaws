@@ -70,3 +70,11 @@ This owner-approved definition is locked for Phase 2 implementation.
 Up to ~50 concurrent peers. The heartbeat interval, retry backoff caps, and
 mDNS query interval are tuned in `13_PERFORMANCE_GUIDELINES.md` to keep
 aggregate LAN traffic low at that scale.
+## Discovery startup fallback
+
+mDNS is preferred but is not a hard startup dependency. Some hosts deny or
+lack a usable multicast-DNS daemon even though LAN broadcast is available. If
+mDNS initialization or advertisement fails, `NetworkService` continues with
+the bounded UDP discovery fallback instead of rejecting `start_network`.
+Discovery remains event-driven: the UDP path announces at its documented
+interval and uses the same TLS, TOFU, and peer-identity validation flow.

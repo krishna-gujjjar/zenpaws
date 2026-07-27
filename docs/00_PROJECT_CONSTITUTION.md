@@ -30,12 +30,13 @@ accessibility, type safety.
   by responsibility into components/hooks/utils/modules - see
   `15_AI_AGENT_RULES.md` for the exact decomposition rules.
 - **No `any`** in TypeScript, anywhere, including generics defaults and
-  catch clauses. Biome's `noExplicitAny` is set to `error`, not `warn`.
+  catch clauses. Oxlint's no-explicit-any rule is an error, not a warning.
 - Every dependency is checked against its own current documentation before
   use - not assumed from training data - since APIs and package names
   change (e.g. `framer-motion` → `motion`).
 - Rust: `cargo clippy -- -D warnings` and `cargo fmt --check` must pass.
-  TypeScript: `biome check .` must pass. Both are wired into CI from Phase 1.
+  TypeScript/React: Ultracite using Oxlint + Oxfmt must pass. Both are wired
+  into CI from Phase 1.
 
 ## Process rules
 

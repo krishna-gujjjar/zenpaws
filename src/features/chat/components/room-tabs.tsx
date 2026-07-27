@@ -1,4 +1,5 @@
 import { useCallback } from "react";
+
 import { roomLabel } from "../utils/room";
 
 interface RoomTabsProps {
@@ -11,7 +12,12 @@ export function RoomTabs({ onSelect, rooms, selectedRoom }: RoomTabsProps) {
   return (
     <nav aria-label="Chat rooms">
       {rooms.map((room) => (
-        <RoomTab active={room === selectedRoom} key={room} onSelect={onSelect} room={room} />
+        <RoomTab
+          active={room === selectedRoom}
+          key={room}
+          onSelect={onSelect}
+          room={room}
+        />
       ))}
     </nav>
   );
