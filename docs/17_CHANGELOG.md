@@ -132,3 +132,12 @@
 - Added frontend `zenpaws://event` message reconciliation for incoming messages, remote mutations, and acknowledgement status updates.
 
 - Extended remote message reconciliation to cover delete and reaction events.
+
+## Shadcn/chat UI foundation
+
+- Added Tailwind CSS v4, the official Vite plugin, shadcn `components.json`, shared utilities, and the shadcn Button component.
+- Installed Chatcn `message` and `chat-container` components through the documented shadcn registry URL.
+- Integrated Chatcn `MessageContent` into the ZenPaws message row and retained the project-owned reaction picker for LAN mutation integration.
+- Skipped Chatcn `prompt-input` because its textarea-based API conflicts with the approved contenteditable composer requirement.
+
+- Added Chatcn message presentation and shadcn avatar primitives to live chat rows.

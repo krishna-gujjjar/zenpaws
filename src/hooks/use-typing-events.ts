@@ -53,7 +53,7 @@ export function useTypingEvents(room: string) {
       .then((dispose) => {
         unlisten = dispose;
       })
-      .catch(() => {});
+      .catch(() => undefined);
     return () => unlisten?.();
   }, [room]);
 

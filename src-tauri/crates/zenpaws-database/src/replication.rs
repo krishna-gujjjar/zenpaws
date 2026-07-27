@@ -169,3 +169,18 @@ impl Database {
         Ok(())
     }
 }
+
+impl Database {
+    /// Returns the emoji reactions stored for one message.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error when reactions cannot be queried.
+    pub fn reactions_for_message(&self, message_id: uuid::Uuid) -> Result<Vec<String>, DatabaseError> {
+        let mut statement = self
+            .connection
+            .prepare("SELECT emoji FROM reactions WHERE message_id = ?1 ORDER BY emoji")?;
+        let rows = statement.query_map([message_id.to_string()], |row| row.get(0))?;
+        Ok(rows.collect::<Result<Vec<_>, _>>()?)
+    }
+}

@@ -126,3 +126,5 @@ Always resume from this file rather than re-deriving intent from chat history.
 - Fixed repeated setup-screen display: when both the persisted username and peer ID exist, AppShell automatically restarts the LAN service and enters chat; setup is shown only for a missing or failed local identity.
 - Added a frontend event bridge hook that invalidates message and receipt queries when remote messages, mutations, or acknowledgements arrive, so the chat feed and status indicators reconcile without manual reload.
 - Extended the frontend event bridge to invalidate the feed for remote deletes and reactions as well as remote edits and incoming messages.
+- Added Tailwind CSS v4 and the shadcn/ui Vite foundation, then installed the Chatcn message and chat-container components from the documented registry URL without the stale `.json` suffix. The Chatcn prompt-input component was intentionally not used because the ZenPaws composer uses a contenteditable input.
+- Integrated Chatcn MessageContent and shadcn Avatar/AvatarFallback into the live message row while preserving ZenPaws actions, author identity, and LAN callbacks.

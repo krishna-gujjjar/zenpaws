@@ -1,7 +1,12 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
-import { useCallback, useRef, useState } from 'react';
-import type { FormEvent, KeyboardEvent } from 'react';
+import {
+  type FormEvent,
+  type KeyboardEvent,
+  useCallback,
+  useRef,
+  useState,
+} from "react";
 
 interface MessageComposerProps {
   onCancelReply: () => void;
@@ -24,7 +29,7 @@ export function MessageComposer({
   const typingTimeout = useRef<number | null>(null);
 
   const stopTyping = useCallback(() => {
-    invoke("set_typing", { isTyping: false, room }).catch(() => {});
+    invoke("set_typing", { isTyping: false, room }).catch(() => undefined);
   }, [room]);
 
   const updateTyping = useCallback(
@@ -33,7 +38,7 @@ export function MessageComposer({
       invoke("set_typing", {
         isTyping: nextBody.trim().length > 0,
         room,
-      }).catch(() => {});
+      }).catch(() => undefined);
       if (typingTimeout.current !== null) {
         window.clearTimeout(typingTimeout.current);
       }
@@ -68,9 +73,9 @@ export function MessageComposer({
         setError(null);
         onSent();
         await client.invalidateQueries({ queryKey: ["messages", room] });
-      } catch (error: unknown) {
+      } catch (reason: unknown) {
         setError(
-          error instanceof Error ? error.message : "Could not send message."
+          reason instanceof Error ? reason.message : "Could not send message."
         );
       }
     },
@@ -88,7 +93,7 @@ export function MessageComposer({
         </p>
       ) : null}
       <label htmlFor="message-body">Message</label>
-      <div tabIndex={0}
+      <div
         aria-label="Message"
         aria-multiline="true"
         className="message-input"

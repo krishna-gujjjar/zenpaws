@@ -1,5 +1,8 @@
-import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
-import type { InfiniteData } from '@tanstack/react-query';
+import {
+  type InfiniteData,
+  useInfiniteQuery,
+  useQuery,
+} from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
 
 export interface ChatMessage {
@@ -9,6 +12,7 @@ export interface ChatMessage {
   createdAt: number;
   id: string;
   replyTo: string | null;
+  reactions: string[];
   room: string;
 }
 

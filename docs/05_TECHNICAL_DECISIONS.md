@@ -145,3 +145,22 @@ can abort before linting because it reserves a large fixed-size allocator. The
 configuration is retained for normal development machines, where the plugin is
 required; this environment can still validate Oxfmt and Oxlint's native rules
 without the plugin when diagnosing that upstream allocator limitation.
+
+## Shadcn and chat UI integration
+
+The frontend now has a proper shadcn/ui Vite foundation using Tailwind CSS v4,
+`@tailwindcss/vite`, `components.json`, the `@/components` alias, and shared
+`cn` utilities. The installation documentation was followed using the current registry URL
+without the stale `.json` suffix:
+
+```bash
+bunx shadcn@latest add "https://shadcn-collections.vercel.app/c/message" --yes
+bunx shadcn@latest add "https://shadcn-collections.vercel.app/c/chat-container" --yes
+```
+
+The installed Chatcn `MessageContent` component is integrated into message
+rows. The Chatcn prompt-input component was intentionally not used because
+this application requires a contenteditable composer rather than a textarea.
+The project-owned `ChatcnReactionPicker` adds the LAN-specific reaction command
+while the installed Chatcn message component supplies the chat presentation
+foundation.

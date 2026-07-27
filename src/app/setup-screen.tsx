@@ -1,7 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import { motion, useReducedMotion } from "motion/react";
-import { useCallback, useState } from 'react';
-import type { FormEvent } from 'react';
+import { type FormEvent, useCallback, useState } from "react";
 
 interface NetworkStatus {
   peerId: string;
@@ -47,8 +46,8 @@ export function SetupScreen({ onReady }: SetupScreenProps) {
         window.localStorage.setItem("zenpaws.peerId", status.peerId);
         window.localStorage.setItem("zenpaws.username", trimmed);
         onReady();
-      } catch (error: unknown) {
-        setError(formatStartupError(error));
+      } catch (reason: unknown) {
+        setError(formatStartupError(reason));
         setStarting(false);
       }
     },

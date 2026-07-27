@@ -23,7 +23,7 @@ export function usePeerPresence() {
       .then((dispose) => {
         unlisten = dispose;
       })
-      .catch(() => {});
+      .catch(() => undefined);
     return () => unlisten?.();
   }, []);
 

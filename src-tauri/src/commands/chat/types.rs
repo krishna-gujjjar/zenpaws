@@ -29,7 +29,11 @@ pub struct ChatMessageStatus {
     pub read: bool,
 }
 
-pub fn project_message(message: &MessageRecord, author_name: String) -> ChatMessage {
+pub fn project_message(
+    message: &MessageRecord,
+    author_name: String,
+    reactions: Vec<String>,
+) -> ChatMessage {
     ChatMessage {
         author_id: message.author.as_uuid().to_string(),
         author_name,
@@ -37,6 +41,7 @@ pub fn project_message(message: &MessageRecord, author_name: String) -> ChatMess
         created_at: message.created_at,
         id: message.id.to_string(),
         reply_to: message.reply_to.map(|id| id.to_string()),
+        reactions,
         room: message.room.clone(),
     }
 }

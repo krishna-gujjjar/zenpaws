@@ -1,7 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import { motion, useReducedMotion } from "motion/react";
-import { useCallback, useEffect, useState } from 'react';
-import type { ReactNode } from 'react';
+import { type ReactNode, useCallback, useEffect, useState } from "react";
 
 import { ChatShell } from "../features/chat/chat-shell";
 import { useAppStatus } from "../hooks/use-app-status";

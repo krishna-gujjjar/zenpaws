@@ -132,5 +132,8 @@ fn project_message_for(
         .peer_username(message.author)
         .map_err(|error| error.to_string())?
         .unwrap_or_else(|| author_id.clone());
-    Ok(types::project_message(message, author_name))
+    let reactions = database
+        .reactions_for_message(message.id)
+        .map_err(|error| error.to_string())?;
+    Ok(types::project_message(message, author_name, reactions))
 }

@@ -1,8 +1,17 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
-import { useCallback, useEffect, useRef, useState } from 'react';
-import type { ChangeEvent, MouseEvent } from 'react';
+import {
+  type ChangeEvent,
+  type MouseEvent,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 
+import { ChatcnReactionPicker } from "../../../components/chat/chatcn-reaction-picker";
+import { MessageContent } from "../../../components/chatcn/ai/message";
+import { Avatar, AvatarFallback } from "../../../components/ui/avatar";
 import { useMessageStatus } from "../../../queries/message-status";
 import type { ChatMessage } from "../../../queries/messages";
 import { parseMentions } from "../utils/mentions";
@@ -29,6 +38,7 @@ export function MessageItem({ message, onReply, room }: MessageItemProps) {
     message.authorId === localPeerId
       ? "You"
       : message.authorName || message.authorId;
+  const reactionCounts = groupReactions(message.reactions);
 
   useEffect(() => {
     if (peerId === null) {
@@ -43,10 +53,13 @@ export function MessageItem({ message, onReply, room }: MessageItemProps) {
     () => client.invalidateQueries({ queryKey: ["messages", room] }),
     [client, room]
   );
-  const react = useCallback(async () => {
-    await invoke("add_reaction", { emoji: "👍", messageId: message.id, room });
-    await refreshMessages();
-  }, [message.id, refreshMessages, room]);
+  const react = useCallback(
+    async (emoji: string) => {
+      await invoke("add_reaction", { emoji, messageId: message.id, room });
+      await refreshMessages();
+    },
+    [message.id, refreshMessages, room]
+  );
   const remove = useCallback(async () => {
     await invoke("delete_message", { id: message.id, room });
     await refreshMessages();
@@ -105,7 +118,14 @@ export function MessageItem({ message, onReply, room }: MessageItemProps) {
   return (
     <article className="message-item" onContextMenu={openContextMenu}>
       <div className="message-content">
-        <strong>{authorLabel}</strong>
+        <div className="message-author">
+          <Avatar className="message-avatar">
+            <AvatarFallback>
+              {authorLabel.slice(0, 2).toUpperCase()}
+            </AvatarFallback>
+          </Avatar>
+          <strong>{authorLabel}</strong>
+        </div>
         {editing ? (
           <>
             <textarea
@@ -118,7 +138,7 @@ export function MessageItem({ message, onReply, room }: MessageItemProps) {
             </button>
           </>
         ) : (
-          <p className="message-body">
+          <MessageContent className="message-body">
             {parseMentions(message.body).map((part) => (
               <span
                 className={
@@ -129,8 +149,17 @@ export function MessageItem({ message, onReply, room }: MessageItemProps) {
                 {part.text}
               </span>
             ))}
-          </p>
+          </MessageContent>
         )}
+        {reactionCounts.length > 0 ? (
+          <div aria-label="Message reactions" className="message-reactions">
+            {reactionCounts.map((reaction) => (
+              <span key={reaction.emoji}>
+                {reaction.emoji} {reaction.count}
+              </span>
+            ))}
+          </div>
+        ) : null}
         {message.replyTo ? <small>Replying to {message.replyTo}</small> : null}
         <div className="message-meta">
           <span>
@@ -141,14 +170,9 @@ export function MessageItem({ message, onReply, room }: MessageItemProps) {
             )}
           </span>
         </div>
-        <button
-          aria-label="React with thumbs up"
-          className="hover-reaction"
-          onClick={react}
-          type="button"
-        >
-          👍
-        </button>
+        <div className="hover-reaction">
+          <ChatcnReactionPicker onSelect={react} />
+        </div>
       </div>
       {contextMenu ? (
         <div
@@ -191,4 +215,14 @@ function messageStatusLabel(
     return "Read";
   }
   return delivered ? "Delivered" : "Sent";
+}
+
+function groupReactions(
+  reactions: readonly string[]
+): Array<{ count: number; emoji: string }> {
+  const counts = new Map<string, number>();
+  for (const emoji of reactions) {
+    counts.set(emoji, (counts.get(emoji) ?? 0) + 1);
+  }
+  return [...counts].map(([emoji, count]) => ({ count, emoji }));
 }

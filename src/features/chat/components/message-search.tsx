@@ -1,5 +1,4 @@
-import { useCallback, useState } from 'react';
-import type { FormEvent } from 'react';
+import { type FormEvent, useCallback, useState } from "react";
 
 import { useMessageSearch } from "../../../queries/messages";
 import type { ChatMessage } from "../../../queries/messages";
