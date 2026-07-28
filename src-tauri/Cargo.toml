@@ -25,14 +25,7 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 thiserror = "2"
 tokio-rustls = "0.26.2"
-tokio = { version = "1", features = [
-  "io-util",
-  "macros",
-  "net",
-  "rt",
-  "sync",
-  "time",
-] }
+tokio = { version = "1", features = ["io-util", "macros", "net", "rt", "sync", "time"] }
 uuid = { version = "1", features = ["serde", "v4"] }
 
 # See docs/05_TECHNICAL_DECISIONS.md for why each of these was chosen.

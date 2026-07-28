@@ -1,5 +1,5 @@
 "use client";
-import { createContext, useContext } from "react";
+import { createContext, useContext, useMemo } from "react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -42,9 +42,11 @@ export function Message({
   variant = "ai",
   ...props
 }: MessageProps) {
+  const contextValue = useMemo(() => ({ disabled: false, variant }), [variant]);
+
   return (
     <TooltipProvider>
-      <MessageContext.Provider value={{ disabled: false, variant }}>
+      <MessageContext.Provider value={contextValue}>
         <div
           className={cn(
             "flex gap-3 items-end group/message",

@@ -89,7 +89,6 @@ export function MessageComposer({
       ) : null}
       <label htmlFor="message-body">Message</label>
       <div
-        tabIndex={0}
         aria-label="Message"
         aria-multiline="true"
         className="message-input"
@@ -100,6 +99,7 @@ export function MessageComposer({
         onKeyDown={handleKeyDown}
         ref={composerRef}
         role="textbox"
+        tabIndex={0}
         suppressContentEditableWarning
       />
       {error ? <p role="alert">{error}</p> : null}

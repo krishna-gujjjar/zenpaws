@@ -87,6 +87,43 @@ export function MessageItem({ message, onReply, room }: MessageItemProps) {
     }
   }, [editing]);
 
+  const renderMessageBody = () => {
+    if (message.deleted) {
+      return <p className="message-deleted">Message deleted</p>;
+    }
+    if (editing) {
+      return (
+        <>
+          <div
+            aria-label="Edit message"
+            className="message-input edit-message-input"
+            contentEditable
+            onInput={changeBody}
+            ref={editRef}
+            role="textbox"
+            tabIndex={0}
+            suppressContentEditableWarning
+          />
+          <button onClick={saveEdit} type="button">
+            Save message
+          </button>
+        </>
+      );
+    }
+    return (
+      <MessageContent className="message-body">
+        {parseMentions(message.body).map((part) => (
+          <span
+            className={part.type === "mention" ? "message-mention" : undefined}
+            key={part.id}
+          >
+            {part.text}
+          </span>
+        ))}
+      </MessageContent>
+    );
+  };
+
   const openContextMenu = useCallback((event: MouseEvent<HTMLElement>) => {
     event.preventDefault();
     setContextMenu({ x: event.clientX, y: event.clientY });
@@ -127,37 +164,7 @@ export function MessageItem({ message, onReply, room }: MessageItemProps) {
           </Avatar>
           <strong>{authorLabel}</strong>
         </div>
-        {message.deleted ? (
-          <p className="message-deleted">Message deleted</p>
-        ) : (editing ? (
-          <>
-            <div
-              aria-label="Edit message"
-              className="message-input edit-message-input"
-              contentEditable
-              onInput={changeBody}
-              ref={editRef}
-              role="textbox"
-              suppressContentEditableWarning
-            />
-            <button onClick={saveEdit} type="button">
-              Save message
-            </button>
-          </>
-        ) : (
-          <MessageContent className="message-body">
-            {parseMentions(message.body).map((part) => (
-              <span
-                className={
-                  part.type === "mention" ? "message-mention" : undefined
-                }
-                key={part.id}
-              >
-                {part.text}
-              </span>
-            ))}
-          </MessageContent>
-        ))}
+        {renderMessageBody()}
         {reactionCounts.length > 0 ? (
           <div aria-label="Message reactions" className="message-reactions">
             {reactionCounts.map((reaction) => (

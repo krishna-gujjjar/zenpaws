@@ -1,12 +1,10 @@
 import { invoke } from "@tauri-apps/api/core";
-import { useReducedMotion } from "motion/react";
-import * as m from "motion/react-m";
-import { useEffect, useState } from "react";
+import { motion, useReducedMotion } from "motion/react";
+import { useCallback, useEffect, useState } from "react";
 import type { ReactNode } from "react";
 
-import { ChatShell } from "@/features/chat/chat-shell";
-import { useAppStatus } from "@/hooks/use-app-status";
-
+import { ChatShell } from "../features/chat/chat-shell";
+import { useAppStatus } from "../hooks/use-app-status";
 import { SetupScreen } from "./setup-screen";
 
 type NetworkState = "ready" | "setup" | "starting";
@@ -19,7 +17,7 @@ export function AppShell(): ReactNode {
   const [networkState, setNetworkState] = useState<NetworkState>(() =>
     storedUsername && storedPeerId ? "starting" : "setup"
   );
-  const markReady = () => setNetworkState("ready");
+  const markReady = useCallback(() => setNetworkState("ready"), []);
 
   useEffect(() => {
     if (networkState !== "starting" || !storedUsername) {
@@ -72,7 +70,7 @@ function StatusScreen({
   version,
 }: StatusScreenProps) {
   return (
-    <m.main
+    <motion.main
       animate={reduceMotion ? false : { opacity: 1 }}
       className="status-page"
       initial={reduceMotion ? false : { opacity: 0 }}
@@ -83,7 +81,7 @@ function StatusScreen({
       </div>
       <h1>ZenPaws</h1>
       <p>{renderStatus(isLoading, isError, version)}</p>
-    </m.main>
+    </motion.main>
   );
 }
 

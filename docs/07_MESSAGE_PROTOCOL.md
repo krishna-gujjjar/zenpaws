@@ -9,7 +9,9 @@
 └──────────────┴───────────────────┴──────────────────────────┘
 ```
 
-Length-prefixed framing over the TCP stream from `06_NETWORK_ARCHITECTURE.md`. `bincode` chosen over JSON for this payload - see `05_TECHNICAL_DECISIONS.md` for why.
+Length-prefixed framing over the TCP stream from `06_NETWORK_ARCHITECTURE.md`.
+`bincode` chosen over JSON for this payload - see `05_TECHNICAL_DECISIONS.md`
+for why.
 
 ## Envelope body (conceptual shape - refined in Phase 5 implementation)
 
@@ -38,18 +40,31 @@ struct MessagePayload {
 
 ## Delivery/read status
 
-Implements the semantics defined in `06_NETWORK_ARCHITECTURE.md` via the `Ack` variant above. `Read` acknowledgements are valid for direct messages only; shared-room messages do not have per-peer read state.
+Implements the semantics defined in `06_NETWORK_ARCHITECTURE.md` via the
+`Ack` variant above. `Read` acknowledgements are valid for direct messages
+only; shared-room messages do not have per-peer read state.
 
 ## Edit / delete / conflict handling
 
-An edit or delete is itself a `MessagePayload` referencing the original `id`. When two peers edit the same message concurrently (rare on a small LAN room, but possible), the Lamport-clock last-write-wins rule from `27_SYNC_REPLICATION_MODEL.md` decides which edit wins; the losing edit is kept in local history (not silently dropped) so it can be surfaced if ever needed for debugging, but not shown in the primary thread.
+An edit or delete is itself a `MessagePayload` referencing the original
+`id`. When two peers edit the same message concurrently (rare on a small
+LAN room, but possible), the Lamport-clock last-write-wins rule from
+`27_SYNC_REPLICATION_MODEL.md` decides which edit wins; the losing edit is
+kept in local history (not silently dropped) so it can be surfaced if ever
+needed for debugging, but not shown in the primary thread.
 
 ## Search
 
-Full-text search is local-only (SQLite FTS5 against the local replica of message history) - it is never a network operation. See `09_DATABASE_SCHEMA.md`.
-
+Full-text search is local-only (SQLite FTS5 against the local replica of
+message history) - it is never a network operation. See
+`09_DATABASE_SCHEMA.md`.
 ## Phase 5 implementation status
 
-`MessagePayload` and `MessageBody` are now implemented in `zenpaws-network/src/protocol.rs`. A locally persisted text message is wrapped in `Envelope::Message`, queued to all connected peer write channels, and a receiving peer sends an `Ack::Delivered` after accepting the frame. The Tauri application persists received text messages through the shared event bus.
+`MessagePayload` and `MessageBody` are now implemented in
+`zenpaws-network/src/protocol.rs`. A locally persisted text message is wrapped
+in `Envelope::Message`, queued to all connected peer write channels, and a
+receiving peer sends an `Ack::Delivered` after accepting the frame. The Tauri
+application persists received text messages through the shared event bus.
 
-Edit, delete, reaction, and read-ack envelopes remain the next network mutation step; their local database commands already exist.
+Edit, delete, reaction, and read-ack envelopes remain the next network
+mutation step; their local database commands already exist.

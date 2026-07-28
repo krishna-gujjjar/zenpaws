@@ -48,8 +48,8 @@ export function NetworkDebug({ onClose }: NetworkDebugProps) {
         udpAddress: response.udpAddress ?? "Unavailable",
       });
       setError(null);
-    } catch (error: unknown) {
-      setError(formatDiagnosticsError(error));
+    } catch (reason: unknown) {
+      setError(formatDiagnosticsError(reason));
     }
   }, []);
 

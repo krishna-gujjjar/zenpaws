@@ -28,6 +28,7 @@ static NETWORK_RUNTIME: OnceLock<NetworkRuntime> = OnceLock::new();
 
 /// Details returned after the local LAN listener begins.
 #[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct NetworkStatus {
     pub peer_id: String,
     pub tcp_port: u16,

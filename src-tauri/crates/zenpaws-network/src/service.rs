@@ -24,9 +24,12 @@ use crate::{
 
 /// Runtime discovery and connection diagnostics.
 #[derive(Clone, Debug, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct NetworkDiagnostics {
     pub connected_peers: usize,
+    pub local_address: Option<String>,
     pub mdns_available: bool,
+    pub recent_logs: Vec<String>,
     pub tcp_address: String,
     pub udp_address: String,
 }
@@ -43,6 +46,7 @@ pub struct NetworkService {
     server_config: Arc<rustls::ServerConfig>,
     bus: EventBus,
     peers: Mutex<HashMap<PeerId, mpsc::Sender<Envelope>>>,
+    logs: Arc<Mutex<Vec<String>>>,
 }
 
 impl NetworkService {
@@ -63,13 +67,30 @@ impl NetworkService {
         let local = HandshakeIdentity::new(peer_id, username)?;
         let listener = TcpListener::bind(bind_address).await?;
         let tcp_port = listener.local_addr()?.port();
+        let logs = Arc::new(Mutex::new(vec![format!(
+            "TCP listener bound on {}",
+            listener.local_addr()?
+        )]));
         let certificate = identity.certificate();
-        let discovery = MdnsDiscovery::start().ok().and_then(|discovery| {
-            discovery
-                .advertise(peer_id, local.username(), tcp_port, certificate.as_ref())
-                .ok()
-                .map(|()| discovery)
-        });
+        let discovery = match MdnsDiscovery::start() {
+            Ok(discovery) => {
+                match discovery.advertise(peer_id, local.username(), tcp_port, certificate.as_ref())
+                {
+                    Ok(()) => {
+                        push_log(&logs, "mDNS advertisement started");
+                        Some(discovery)
+                    }
+                    Err(error) => {
+                        push_log(&logs, &format!("mDNS advertisement failed: {error:?}"));
+                        None
+                    }
+                }
+            }
+            Err(error) => {
+                push_log(&logs, &format!("mDNS startup failed: {error:?}"));
+                None
+            }
+        };
         let udp = UdpDiscovery::bind(
             SocketAddr::from(([0, 0, 0, 0], UDP_DISCOVERY_PORT)),
             SocketAddr::from(([255, 255, 255, 255], UDP_DISCOVERY_PORT)),
@@ -92,6 +113,7 @@ impl NetworkService {
             server_config: identity.server_config()?,
             bus,
             peers: Mutex::new(HashMap::new()),
+            logs,
         })
     }
 
@@ -121,9 +143,17 @@ impl NetworkService {
             .lock()
             .map_err(|_| ServiceError::PeerRegistryPoisoned)?
             .len();
+        let local_address = local_lan_address();
+        let recent_logs = self
+            .logs
+            .lock()
+            .map(|logs| logs.clone())
+            .unwrap_or_default();
         Ok(NetworkDiagnostics {
             connected_peers,
+            local_address,
             mdns_available: self.discovery.is_some(),
+            recent_logs,
             tcp_address: self.local_addr()?.to_string(),
             udp_address: self.udp.local_addr()?.to_string(),
         })
@@ -214,6 +244,21 @@ impl NetworkService {
             stream,
         })
     }
+}
+
+fn push_log(logs: &Arc<Mutex<Vec<String>>>, message: &str) {
+    if let Ok(mut logs) = logs.lock() {
+        logs.push(message.to_owned());
+        if logs.len() > 100 {
+            logs.remove(0);
+        }
+    }
+}
+
+fn local_lan_address() -> Option<String> {
+    let socket = std::net::UdpSocket::bind("0.0.0.0:0").ok()?;
+    socket.connect("8.8.8.8:80").ok()?;
+    Some(socket.local_addr().ok()?.ip().to_string())
 }
 
 #[cfg(test)]

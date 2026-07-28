@@ -4,7 +4,7 @@ export interface MessagePart {
   type: "mention" | "text";
 }
 
-const MENTION_PATTERN = /@[a-zA-Z0-9_-]{1,32}/g;
+const MENTION_PATTERN = /@[a-zA-Z0-9_-]{1,32}/gu;
 
 export function parseMentions(body: string): MessagePart[] {
   const parts: MessagePart[] = [];

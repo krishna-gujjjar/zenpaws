@@ -30,6 +30,10 @@ export function ChatShell() {
       .filter(([, state]) => state !== "Disconnected")
       .map(([peerId]) => directRoom(peerId)),
   ];
+  if (debugOpen) {
+    return <NetworkDebug onClose={closeDebug} />;
+  }
+
   const renderMessageArea = () => {
     if (debugOpen) {
       return <NetworkDebug onClose={closeDebug} />;
