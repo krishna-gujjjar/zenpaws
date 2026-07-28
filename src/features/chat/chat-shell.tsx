@@ -1,10 +1,9 @@
 import { useCallback, useState } from "react";
 
-import { useMessageEvents } from "@/hooks/use-message-events";
-import { usePeerPresence } from "@/hooks/use-peer-presence";
-import { useTypingEvents } from "@/hooks/use-typing-events";
-import type { ChatMessage } from "@/queries/messages";
-
+import { useMessageEvents } from "../../hooks/use-message-events";
+import { usePeerPresence } from "../../hooks/use-peer-presence";
+import { useTypingEvents } from "../../hooks/use-typing-events";
+import type { ChatMessage } from "../../queries/messages";
 import { MessageComposer } from "./components/message-composer";
 import { MessageList } from "./components/message-list";
 import { MessageSearch } from "./components/message-search";

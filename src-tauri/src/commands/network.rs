@@ -13,7 +13,8 @@ use serde::Serialize;
 use tauri::{AppHandle, Manager, State};
 use zenpaws_database::{DatabaseTrustStore, LamportCursor};
 use zenpaws_network::{
-    Envelope, LamportClock, MessageBody, MessagePayload, NetworkService, TlsIdentity,
+    Envelope, LamportClock, MessageBody, MessagePayload, NetworkDiagnostics, NetworkService,
+    TlsIdentity,
 };
 use zenpaws_settings::{LocalIdentity, load_local_identity, save_local_identity};
 use zenpaws_shared::{EventBus, PeerId, PeerTrustStore};
@@ -92,6 +93,17 @@ pub async fn start_network(
     tokio::spawn(Arc::clone(&service).run_discovery(Arc::clone(&trust_store), receiver.clone()));
     tokio::spawn(service.run_udp(trust_store, receiver));
     Ok(status)
+}
+
+/// Returns discovery, socket, and connected-peer diagnostics.
+#[tauri::command]
+pub fn network_diagnostics() -> Result<NetworkDiagnostics, String> {
+    NETWORK_RUNTIME
+        .get()
+        .ok_or_else(|| "network service is not running".to_owned())?
+        .service
+        .diagnostics()
+        .map_err(|error| error.to_string())
 }
 
 /// Stops LAN discovery and listener lifecycle tasks.

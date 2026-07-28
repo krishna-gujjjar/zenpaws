@@ -18,7 +18,7 @@ pub use protocol::{
     AckKind, Envelope, FrameError, LamportClock, MAX_FRAME_BYTES, MessageBody, MessagePayload,
     read_envelope, write_envelope,
 };
-pub use service::{NetworkService, PeerConnection, ServiceError};
+pub use service::{NetworkDiagnostics, NetworkService, PeerConnection, ServiceError};
 pub use session::{HandshakeError, HandshakeIdentity, client_handshake, server_handshake};
 pub use state::{ConnectionStateMachine, StateError};
 pub use tls::{TlsError, TlsIdentity};

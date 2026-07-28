@@ -22,6 +22,15 @@ use crate::{
     server_handshake,
 };
 
+/// Runtime discovery and connection diagnostics.
+#[derive(Clone, Debug, serde::Serialize)]
+pub struct NetworkDiagnostics {
+    pub connected_peers: usize,
+    pub mdns_available: bool,
+    pub tcp_address: String,
+    pub udp_address: String,
+}
+
 /// Listener, mDNS advertisement, and inbound encrypted peer lifecycle.
 pub struct NetworkService {
     connecting_peers: Mutex<HashSet<PeerId>>,
@@ -99,6 +108,25 @@ impl NetworkService {
     /// Returns an error when the listener no longer has a local address.
     pub fn local_addr(&self) -> Result<SocketAddr, ServiceError> {
         Ok(self.listener.local_addr()?)
+    }
+
+    /// Returns the current LAN discovery and connection state.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error when the UDP socket or peer registry cannot be queried.
+    pub fn diagnostics(&self) -> Result<NetworkDiagnostics, ServiceError> {
+        let connected_peers = self
+            .peers
+            .lock()
+            .map_err(|_| ServiceError::PeerRegistryPoisoned)?
+            .len();
+        Ok(NetworkDiagnostics {
+            connected_peers,
+            mdns_available: self.discovery.is_some(),
+            tcp_address: self.local_addr()?.to_string(),
+            udp_address: self.udp.local_addr()?.to_string(),
+        })
     }
 
     /// Queues one envelope for every currently connected peer.
