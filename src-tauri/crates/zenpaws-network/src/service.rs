@@ -246,7 +246,7 @@ impl NetworkService {
     }
 }
 
-fn push_log(logs: &Arc<Mutex<Vec<String>>>, message: &str) {
+pub(super) fn push_log(logs: &Arc<Mutex<Vec<String>>>, message: &str) {
     if let Ok(mut logs) = logs.lock() {
         logs.push(message.to_owned());
         if logs.len() > 100 {
