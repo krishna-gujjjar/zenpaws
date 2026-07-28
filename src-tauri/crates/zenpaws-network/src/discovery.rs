@@ -65,7 +65,15 @@ impl MdnsDiscovery {
             properties.insert(format!("certificate_{index}"), value.to_owned());
         }
         let instance_name = format!("zenpaws-{}", peer_id.as_uuid());
-        let service = ServiceInfo::new(SERVICE_TYPE, &instance_name, "", "", port, properties)?;
+        let host_name = format!("zenpaws-{}.local.", peer_id.as_uuid());
+        let service = ServiceInfo::new(
+            SERVICE_TYPE,
+            &instance_name,
+            &host_name,
+            "",
+            port,
+            properties,
+        )?;
         self.daemon.register(service)?;
         Ok(())
     }
