@@ -18,10 +18,10 @@ type MessageProps = {
   variant?: MessageVariant;
 } & React.HTMLProps<HTMLDivElement>;
 
-type MessageContext = {
+interface MessageContext {
   disabled?: boolean;
   variant: MessageVariant;
-};
+}
 
 const MessageContext = createContext<MessageContext>({
   disabled: false,
@@ -31,7 +31,7 @@ const MessageContext = createContext<MessageContext>({
 function useMessageContext() {
   const ctx = useContext(MessageContext);
   if (!ctx) {
-    throw Error("useMessageContext must be used within a Message");
+    throw new Error("useMessageContext must be used within a Message");
   }
   return ctx;
 }
@@ -61,12 +61,12 @@ export function Message({
   );
 }
 
-type MessageAvatarProps = {
+interface MessageAvatarProps {
   src: string;
   alt: string;
   fallback?: string;
   className?: string;
-};
+}
 
 export function MessageAvatar({
   src,

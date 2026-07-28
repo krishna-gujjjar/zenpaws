@@ -1,13 +1,7 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
-import {
-  type FormEvent,
-  type MouseEvent,
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import type { FormEvent, MouseEvent } from "react";
 
 import { ChatcnReactionPicker } from "../../../components/chat/chatcn-reaction-picker";
 import { MessageContent } from "../../../components/chatcn/ai/message";
@@ -135,7 +129,7 @@ export function MessageItem({ message, onReply, room }: MessageItemProps) {
         </div>
         {message.deleted ? (
           <p className="message-deleted">Message deleted</p>
-        ) : editing ? (
+        ) : (editing ? (
           <>
             <div
               aria-label="Edit message"
@@ -163,7 +157,7 @@ export function MessageItem({ message, onReply, room }: MessageItemProps) {
               </span>
             ))}
           </MessageContent>
-        )}
+        ))}
         {reactionCounts.length > 0 ? (
           <div aria-label="Message reactions" className="message-reactions">
             {reactionCounts.map((reaction) => (
@@ -234,7 +228,7 @@ function messageStatusLabel(
 
 function groupReactions(
   reactions: readonly string[]
-): Array<{ count: number; emoji: string }> {
+): { count: number; emoji: string }[] {
   const counts = new Map<string, number>();
   for (const emoji of reactions) {
     counts.set(emoji, (counts.get(emoji) ?? 0) + 1);

@@ -1,5 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { type ReactNode, useState } from "react";
+import { domAnimation, LazyMotion } from "motion/react";
+import { useState } from "react";
+import type { ReactNode } from "react";
 
 interface AppProvidersProps {
   children: ReactNode;
@@ -26,6 +28,8 @@ export function AppProviders({ children }: AppProvidersProps): ReactNode {
   );
 
   return (
-    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    <LazyMotion features={domAnimation}>
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    </LazyMotion>
   );
 }

@@ -1,10 +1,8 @@
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { useCallback, useEffect, useRef } from "react";
 
-import {
-  type ChatMessage,
-  useInfiniteMessages,
-} from "../../../queries/messages";
+import { useInfiniteMessages } from "../../../queries/messages";
+import type { ChatMessage } from "../../../queries/messages";
 import { MessageItem } from "./message-item";
 
 interface MessageListProps {
@@ -15,7 +13,10 @@ interface MessageListProps {
 export function MessageList({ onReply, room }: MessageListProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const messages = useInfiniteMessages(room);
-  const items = messages.data?.pages.flat().slice().reverse() ?? [];
+  const pages = Array.isArray(messages.data?.pages) ? messages.data.pages : [];
+  const items = oldestFirst(
+    pages.flatMap((page) => (Array.isArray(page) ? page : []))
+  );
   const rows = useVirtualizer({
     count: items.length,
     estimateSize: () => 52,
@@ -23,7 +24,7 @@ export function MessageList({ onReply, room }: MessageListProps) {
     overscan: 8,
   });
   const loadOlder = useCallback(() => {
-    messages.fetchNextPage().catch(() => undefined);
+    messages.fetchNextPage().catch(() => {});
   }, [messages]);
   const previousCount = useRef(0);
 
@@ -90,4 +91,15 @@ export function MessageList({ onReply, room }: MessageListProps) {
       </div>
     </section>
   );
+}
+
+function oldestFirst(messages: readonly ChatMessage[]): ChatMessage[] {
+  const ordered: ChatMessage[] = [];
+  for (let index = messages.length - 1; index >= 0; index -= 1) {
+    const message = messages[index];
+    if (message) {
+      ordered.push(message);
+    }
+  }
+  return ordered;
 }

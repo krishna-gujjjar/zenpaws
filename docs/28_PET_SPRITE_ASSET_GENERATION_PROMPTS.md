@@ -116,7 +116,7 @@ identical to the reference in every frame. Only the pose changes.
 ## State animation guide
 
 | State | Frames | FPS | Motion |
-|---|---:|---:|---|
+| --- | --: | --: | --- |
 | `idle` | 4 | 6 | Subtle breathing or bob, occasional blink, loop. |
 | `walk` | 6 | 10 | Side-view walk loop. Parrot uses a hop cycle. |
 | `run` | 6 | 14 | Faster exaggerated walk. Parrot uses wing-flutter glide. |

@@ -13,13 +13,15 @@ export default function ChatContainer({
   const chatRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (!chatRef.current) return;
+    if (!chatRef.current) {
+      return;
+    }
 
     const observer = new MutationObserver(() => {
       if (chatRef.current) {
         chatRef.current.scrollTo({
-          top: chatRef.current.scrollHeight,
           behavior: "smooth",
+          top: chatRef.current.scrollHeight,
         });
       }
     });
