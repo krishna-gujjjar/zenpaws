@@ -65,7 +65,12 @@ impl NetworkService {
         trust_store: Arc<dyn PeerTrustStore>,
         mut shutdown: tokio::sync::watch::Receiver<bool>,
     ) {
+        super::push_log(&self.logs, "mDNS discovery loop started");
         let Some(discovery) = self.discovery.as_ref() else {
+            super::push_log(
+                &self.logs,
+                "mDNS discovery loop disabled because mDNS is unavailable",
+            );
             return;
         };
         loop {
@@ -77,11 +82,28 @@ impl NetworkService {
                     continue;
                 }
                 result = discovery.next_peer() => match result {
-                    Ok(peer) => peer,
-                    Err(_) => break,
+                    Ok(peer) => {
+                        super::push_log(&self.logs, &format!("mDNS peer discovered: {} at {}", peer.peer_id.as_uuid(), peer.endpoint));
+                        peer
+                    }
+                    Err(error) => {
+                        super::push_log(&self.logs, &format!("mDNS browse error: {error:?}"));
+                        break;
+                    }
                 },
             };
-            if peer.peer_id == self.local.peer_id() || !self.mark_connecting(peer.peer_id) {
+            if peer.peer_id == self.local.peer_id() {
+                super::push_log(&self.logs, "Ignored self-discovered mDNS advertisement");
+                continue;
+            }
+            if !self.mark_connecting(peer.peer_id) {
+                super::push_log(
+                    &self.logs,
+                    &format!(
+                        "Ignored duplicate peer discovery: {}",
+                        peer.peer_id.as_uuid()
+                    ),
+                );
                 continue;
             }
             let service = Arc::clone(&self);
@@ -96,8 +118,17 @@ impl NetworkService {
         trust_store: Arc<dyn PeerTrustStore>,
         mut shutdown: tokio::sync::watch::Receiver<bool>,
     ) {
+        super::push_log(
+            &self.logs,
+            "UDP discovery loop started on broadcast port 46235",
+        );
         loop {
-            let _ = self.udp.announce(&self.udp_advertisement).await;
+            match self.udp.announce(&self.udp_advertisement).await {
+                Ok(()) => super::push_log(&self.logs, "UDP discovery announcement sent"),
+                Err(error) => {
+                    super::push_log(&self.logs, &format!("UDP announcement failed: {error:?}"))
+                }
+            }
             let peer = tokio::select! {
                 changed = shutdown.changed() => {
                     if changed.is_err() || *shutdown.borrow() {
@@ -106,13 +137,19 @@ impl NetworkService {
                     continue;
                 }
                 received = self.udp.receive() => match received {
-                    Ok((advertisement, source)) => crate::DiscoveredPeer {
+                    Ok((advertisement, source)) => {
+                        super::push_log(&self.logs, &format!("UDP peer discovered: {} from {}", advertisement.peer_id.as_uuid(), source));
+                        crate::DiscoveredPeer {
                         certificate_der: advertisement.certificate_der,
                         endpoint: SocketAddr::new(source.ip(), advertisement.tcp_port),
                         peer_id: advertisement.peer_id,
                         username: advertisement.username,
+                    }
+                    }
+                    Err(error) => {
+                        super::push_log(&self.logs, &format!("UDP receive failed: {error:?}"));
+                        continue;
                     },
-                    Err(_) => continue,
                 },
                 () = tokio::time::sleep(Duration::from_secs(30)) => continue,
             };
@@ -139,6 +176,10 @@ impl NetworkService {
                 .await
             {
                 Ok(connection) => {
+                    super::push_log(
+                        &self.logs,
+                        &format!("Peer connected: {}", peer.peer_id.as_uuid()),
+                    );
                     self.register_connection(connection);
                     break;
                 }
@@ -146,9 +187,16 @@ impl NetworkService {
                     self.bus.publish(ZenPawsEvent::PeerTrustViolation {
                         peer_id: peer.peer_id,
                     });
+                    super::push_log(
+                        &self.logs,
+                        &format!("TOFU pin mismatch for peer: {}", peer.peer_id.as_uuid()),
+                    );
                     break;
                 }
-                Err(_) => tokio::time::sleep(retry.next_delay()).await,
+                Err(error) => {
+                    super::push_log(&self.logs, &format!("Peer connection failed: {error:?}"));
+                    tokio::time::sleep(retry.next_delay()).await;
+                }
             }
         }
         self.clear_connecting(peer.peer_id);

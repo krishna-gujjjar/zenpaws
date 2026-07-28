@@ -171,3 +171,5 @@
 - Added troubleshooting guidance for Windows Firewall, macOS Local Network permissions, guest Wi-Fi, and client isolation.
 
 - Fixed network diagnostics and startup status IPC field naming by serializing Rust fields as camelCase for the frontend.
+
+- Added detailed peer discovery and connection diagnostics for troubleshooting cross-device LAN connectivity.
