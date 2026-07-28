@@ -37,8 +37,13 @@ impl LamportClock {
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub enum MessageBody {
     Text(String),
-    Edit { message_id: Uuid, body: String },
-    Delete { message_id: Uuid },
+    Edit {
+        message_id: Uuid,
+        body: String,
+    },
+    Delete {
+        message_id: Uuid,
+    },
     Reaction {
         message_id: Uuid,
         emoji: String,

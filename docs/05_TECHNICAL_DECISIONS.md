@@ -164,3 +164,11 @@ this application requires a contenteditable composer rather than a textarea.
 The project-owned `ChatcnReactionPicker` adds the LAN-specific reaction command
 while the installed Chatcn message component supplies the chat presentation
 foundation.
+
+## Transitive GTK security advisory
+
+The current Cargo graph includes `glib 0.18.5` through Tauri's Linux GTK3
+backend. RustSec identifies the affected `VariantStrIter` implementation and
+lists `glib 0.20.0` as the fixed line. ZenPaws does not directly use that API;
+we will upgrade Tauri and the GTK3 bindings together when the compatible Tauri
+graph adopts the fix rather than forcing an unsafe partial override.

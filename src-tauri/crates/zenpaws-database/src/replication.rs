@@ -176,7 +176,10 @@ impl Database {
     /// # Errors
     ///
     /// Returns an error when reactions cannot be queried.
-    pub fn reactions_for_message(&self, message_id: uuid::Uuid) -> Result<Vec<String>, DatabaseError> {
+    pub fn reactions_for_message(
+        &self,
+        message_id: uuid::Uuid,
+    ) -> Result<Vec<String>, DatabaseError> {
         let mut statement = self
             .connection
             .prepare("SELECT emoji FROM reactions WHERE message_id = ?1 ORDER BY emoji")?;
