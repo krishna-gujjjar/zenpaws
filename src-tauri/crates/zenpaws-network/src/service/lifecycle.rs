@@ -202,7 +202,10 @@ impl NetworkService {
                     break;
                 }
                 Err(error) => {
-                    super::push_log(&self.logs, &format!("Peer connection failed: {error:?}"));
+                    super::push_log(
+                        &self.logs,
+                        &format!("Peer connection failed to {} at {}: {error:?}", peer.peer_id.as_uuid(), peer.endpoint),
+                    );
                     tokio::time::sleep(retry.next_delay()).await;
                 }
             }
