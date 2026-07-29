@@ -19,6 +19,7 @@ pub struct PeerConnection {
     pub(super) remote: HandshakeIdentity,
     pub(super) state: ConnectionStateMachine,
     pub(super) stream: TlsStream<TcpStream>,
+    pub(super) logs: std::sync::Arc<std::sync::Mutex<Vec<String>>>,
 }
 
 impl PeerConnection {
@@ -70,6 +71,10 @@ impl PeerConnection {
                 result = self.receive() => {
                     match result {
                         Ok(Envelope::Message(payload)) => {
+                            super::push_log(
+                                &self.logs,
+                                &format!("Message envelope received from peer {}", self.remote.peer_id().as_uuid()),
+                            );
                             match payload.body {
                                 MessageBody::Text(body) => self.state.publish(ZenPawsEvent::MessageReceived {
                                     message_id: payload.id,
@@ -134,13 +139,33 @@ impl PeerConnection {
                             });
                         }
                         Ok(_) => {}
-                        Err(_) => break,
+                        Err(error) => {
+                            super::push_log(
+                                &self.logs,
+                                &format!("Peer {} receive loop ended: {error:?}", self.remote.peer_id().as_uuid()),
+                            );
+                            break;
+                        }
                     }
                 }
                 envelope = outbound.recv() => {
                     match envelope {
-                        Some(envelope) if write_envelope(&mut self.stream, &envelope).await.is_ok() => {}
-                        _ => break,
+                        Some(envelope) => {
+                            if let Err(error) = write_envelope(&mut self.stream, &envelope).await {
+                                super::push_log(
+                                    &self.logs,
+                                    &format!("Peer {} write failed: {error:?}", self.remote.peer_id().as_uuid()),
+                                );
+                                break;
+                            }
+                        }
+                        None => {
+                            super::push_log(
+                                &self.logs,
+                                &format!("Peer {} outbound channel closed", self.remote.peer_id().as_uuid()),
+                            );
+                            break;
+                        }
                     }
                 }
             }

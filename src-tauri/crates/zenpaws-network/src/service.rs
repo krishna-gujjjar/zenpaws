@@ -165,7 +165,21 @@ impl NetworkService {
     /// Queues one envelope for every currently connected peer.
     pub fn broadcast(&self, envelope: &Envelope) {
         if let Ok(mut peers) = self.peers.lock() {
-            peers.retain(|_, sender| sender.try_send(envelope.clone()).is_ok());
+            let peer_count = peers.len();
+            let mut delivered = 0;
+            peers.retain(|_, sender| match sender.try_send(envelope.clone()) {
+                Ok(()) => {
+                    delivered += 1;
+                    true
+                }
+                Err(_) => false,
+            });
+            push_log(
+                &self.logs,
+                &format!("Broadcast queued to {delivered}/{peer_count} connected peers"),
+            );
+        } else {
+            push_log(&self.logs, "Broadcast failed: peer registry lock poisoned");
         }
     }
 
@@ -179,6 +193,12 @@ impl NetworkService {
         sender
             .try_send(envelope.clone())
             .map_err(|_| ServiceError::PeerChannelClosed)
+            .inspect(|()| {
+                push_log(
+                    &self.logs,
+                    &format!("Targeted envelope queued for peer {}", peer_id.as_uuid()),
+                )
+            })
     }
 
     fn register_connection(&self, connection: PeerConnection) {
@@ -213,6 +233,7 @@ impl NetworkService {
             remote,
             state,
             stream,
+            logs: Arc::clone(&self.logs),
         })
     }
 
@@ -245,11 +266,13 @@ impl NetworkService {
             remote,
             state,
             stream,
+            logs: Arc::clone(&self.logs),
         })
     }
 }
 
 pub(super) fn push_log(logs: &Arc<Mutex<Vec<String>>>, message: &str) {
+    eprintln!("[zenpaws-network] {message}");
     if let Ok(mut logs) = logs.lock() {
         logs.push(message.to_owned());
         if logs.len() > 100 {

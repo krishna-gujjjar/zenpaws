@@ -23,7 +23,10 @@ impl NetworkService {
                         retry.reset();
                         self.register_connection(connection);
                     }
-                    Err(_) => tokio::time::sleep(retry.next_delay()).await,
+                    Err(error) => {
+                        super::push_log(&self.logs, &format!("Inbound peer accept failed: {error:?}"));
+                        tokio::time::sleep(retry.next_delay()).await;
+                    }
                 },
             }
         }
