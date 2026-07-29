@@ -126,11 +126,8 @@ impl NetworkService {
             "UDP discovery loop started on broadcast port 46235",
         );
         loop {
-            match self.udp.announce(&self.udp_advertisement).await {
-                Ok(()) => super::push_log(&self.logs, "UDP discovery announcement sent"),
-                Err(error) => {
-                    super::push_log(&self.logs, &format!("UDP announcement failed: {error:?}"))
-                }
+            if let Err(error) = self.udp.announce(&self.udp_advertisement).await {
+                super::push_log(&self.logs, &format!("UDP announcement failed: {error:?}"));
             }
             let peer = tokio::select! {
                 changed = shutdown.changed() => {
@@ -140,14 +137,11 @@ impl NetworkService {
                     continue;
                 }
                 received = self.udp.receive() => match received {
-                    Ok((advertisement, source)) => {
-                        super::push_log(&self.logs, &format!("UDP peer discovered: {} from {}", advertisement.peer_id.as_uuid(), source));
-                        crate::DiscoveredPeer {
+                    Ok((advertisement, source)) => crate::DiscoveredPeer {
                         certificate_der: advertisement.certificate_der,
                         endpoint: SocketAddr::new(source.ip(), advertisement.tcp_port),
                         peer_id: advertisement.peer_id,
                         username: advertisement.username,
-                    }
                     }
                     Err(error) => {
                         super::push_log(&self.logs, &format!("UDP receive failed: {error:?}"));
@@ -156,9 +150,20 @@ impl NetworkService {
                 },
                 () = tokio::time::sleep(Duration::from_secs(30)) => continue,
             };
-            if peer.peer_id == self.local.peer_id() || !self.mark_connecting(peer.peer_id) {
+            if peer.peer_id == self.local.peer_id() {
                 continue;
             }
+            if !self.mark_connecting(peer.peer_id) {
+                continue;
+            }
+            super::push_log(
+                &self.logs,
+                &format!(
+                    "UDP peer discovered: {} from {}",
+                    peer.peer_id.as_uuid(),
+                    peer.endpoint
+                ),
+            );
             let service = Arc::clone(&self);
             let trust_store = Arc::clone(&trust_store);
             tokio::spawn(async move { service.connect_with_retry(peer, trust_store).await });

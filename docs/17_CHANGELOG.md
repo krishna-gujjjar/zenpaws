@@ -173,3 +173,6 @@
 - Fixed network diagnostics and startup status IPC field naming by serializing Rust fields as camelCase for the frontend.
 
 - Added detailed peer discovery and connection diagnostics for troubleshooting cross-device LAN connectivity.
+
+- Fixed macOS UDP fallback targeting by using the local directed LAN broadcast address instead of the global broadcast address.
+- Added UDP discovery receive/send diagnostics to identify broadcast, firewall, and peer-connection failures.
