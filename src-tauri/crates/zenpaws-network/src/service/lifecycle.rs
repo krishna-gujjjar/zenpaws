@@ -142,7 +142,7 @@ impl NetworkService {
                         endpoint: SocketAddr::new(source.ip(), advertisement.tcp_port),
                         peer_id: advertisement.peer_id,
                         username: advertisement.username,
-                    }
+                    },
                     Err(error) => {
                         super::push_log(&self.logs, &format!("UDP receive failed: {error:?}"));
                         continue;
