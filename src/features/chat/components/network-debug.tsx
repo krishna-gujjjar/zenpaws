@@ -2,6 +2,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { useCallback, useState } from "react";
 
 interface NetworkDiagnostics {
+  broadcastAddress: string;
   connectedPeers: number;
   localAddress: string | null;
   mdnsAvailable: boolean;
@@ -38,6 +39,7 @@ export function NetworkDebug({ onClose }: NetworkDebugProps) {
         "network_diagnostics"
       );
       setDiagnostics({
+        broadcastAddress: response.broadcastAddress ?? "Unavailable",
         connectedPeers: response.connectedPeers ?? 0,
         localAddress: response.localAddress ?? null,
         mdnsAvailable: response.mdnsAvailable ?? false,

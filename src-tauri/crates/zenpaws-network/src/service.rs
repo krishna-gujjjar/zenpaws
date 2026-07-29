@@ -7,7 +7,7 @@ pub use error::ServiceError;
 
 use std::{
     collections::{HashMap, HashSet},
-    net::SocketAddr,
+    net::{Ipv4Addr, SocketAddr},
     sync::{Arc, Mutex},
     time::Duration,
 };
@@ -26,6 +26,7 @@ use crate::{
 #[derive(Clone, Debug, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct NetworkDiagnostics {
+    pub broadcast_address: String,
     pub connected_peers: usize,
     pub local_address: Option<String>,
     pub mdns_available: bool,
@@ -93,7 +94,7 @@ impl NetworkService {
         };
         let udp = UdpDiscovery::bind(
             SocketAddr::from(([0, 0, 0, 0], UDP_DISCOVERY_PORT)),
-            SocketAddr::from(([255, 255, 255, 255], UDP_DISCOVERY_PORT)),
+            lan_broadcast_address(UDP_DISCOVERY_PORT),
         )
         .await?;
         let udp_advertisement = UdpAdvertisement::new(
@@ -144,12 +145,14 @@ impl NetworkService {
             .map_err(|_| ServiceError::PeerRegistryPoisoned)?
             .len();
         let local_address = local_lan_address();
+        let broadcast_address = lan_broadcast_address(UDP_DISCOVERY_PORT).to_string();
         let recent_logs = self
             .logs
             .lock()
             .map(|logs| logs.clone())
             .unwrap_or_default();
         Ok(NetworkDiagnostics {
+            broadcast_address,
             connected_peers,
             local_address,
             mdns_available: self.discovery.is_some(),
@@ -253,6 +256,17 @@ pub(super) fn push_log(logs: &Arc<Mutex<Vec<String>>>, message: &str) {
             logs.remove(0);
         }
     }
+}
+
+fn lan_broadcast_address(port: u16) -> SocketAddr {
+    let broadcast = local_lan_address()
+        .and_then(|address| address.parse::<Ipv4Addr>().ok())
+        .map(|address| {
+            let octets = address.octets();
+            Ipv4Addr::new(octets[0], octets[1], octets[2], 255)
+        })
+        .unwrap_or(Ipv4Addr::new(255, 255, 255, 255));
+    SocketAddr::from((broadcast, port))
 }
 
 fn local_lan_address() -> Option<String> {
